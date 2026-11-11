@@ -1,4 +1,4 @@
-# Bone Banner 🇪🇸
+# Charla 🇪🇸
 
 Spanisch lernen durch Gespräche mit KI-Charakteren – inspiriert von Apps wie Langua.
 
