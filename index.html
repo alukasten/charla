@@ -421,16 +421,17 @@ async function callGemini(apiKey, systemPrompt, apiHistory) {
   }
 
   if (!res.ok) {
-    let msg = "Fehler beim Abruf (HTTP " + res.status + ")";
+    let detail = "";
     try {
       const data = await res.json();
-      if (data && data.error && data.error.message) msg = data.error.message;
+      if (data && data.error && data.error.message) detail = data.error.message;
     } catch (e) {}
-    if (res.status === 400) msg = "Ungültiger API-Key oder ungültige Anfrage. Bitte prüfen.";
-    else if (res.status === 403) msg = "API-Key ohne Berechtigung. Bitte prüfen.";
-    else if (res.status === 429) msg = "Kostenloses Kontingent gerade ausgeschöpft. Kurz warten und nochmal versuchen.";
-    else if (res.status >= 500) msg = "Gemini-Server-Fehler. Versuch's nochmal.";
-    throw new Error(msg);
+    let prefix = "Fehler beim Abruf (HTTP " + res.status + ")";
+    if (res.status === 400) prefix = "Ungültiger API-Key oder ungültige Anfrage";
+    else if (res.status === 403) prefix = "API-Key ohne Berechtigung";
+    else if (res.status === 429) prefix = "Kostenloses Kontingent gerade ausgeschöpft";
+    else if (res.status >= 500) prefix = "Gemini-Server-Fehler";
+    throw new Error(detail ? prefix + ": " + detail : prefix + ". Versuch's nochmal.");
   }
 
   const data = await res.json();
