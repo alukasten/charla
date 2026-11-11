@@ -349,43 +349,40 @@ const STARTER_SUGGESTIONS = [
   { es:"Hola, ¿cómo estás?", de:"Hallo, wie geht es dir?" },
 ];
 
-// ── Claude API ───────────────────────────────────────────────────────────────
-const API_KEY_STORAGE = "boneBannerApiKey";
-const MODEL = "claude-opus-5-5";
+// ── Gemini API (Google AI Studio, free tier) ────────────────────────────────
+const API_KEY_STORAGE = "boneBannerGeminiKey";
+const MODEL = "gemini-2.5-flash";
 
-const CHARACTER_REPLY_TOOL = {
-  name: "character_reply",
-  description: "Antwort des Charakters im Spanisch-Lerngespräch, inklusive optionalem Grammatik-Feedback und Vokabel-Vorschlägen.",
-  input_schema: {
-    type: "object",
-    properties: {
-      reply_es: { type: "string", description: "Die Antwort des Charakters auf Spanisch, 1-3 kurze natürliche Sätze, passend zum Sprachniveau des Lernenden." },
-      reply_de: { type: "string", description: "Natürliche deutsche Übersetzung von reply_es." },
-      grammar_tip: {
-        type: "object",
-        description: "Rückmeldung zu einem klaren Grammatikfehler in der letzten Nachricht des Lernenden. Nur ausfüllen, wenn es einen eindeutigen Fehler gibt und es nicht die erste Nachricht im Gespräch ist; sonst dieses Feld komplett weglassen.",
-        properties: {
-          original: { type: "string", description: "Der fehlerhafte Ausdruck aus der Nachricht des Lernenden." },
-          corrected: { type: "string", description: "Die korrigierte Version davon." },
-          explanation_de: { type: "string", description: "Kurze, freundliche Erklärung auf Deutsch, warum." },
-        },
-        required: ["original", "corrected", "explanation_de"],
+const REPLY_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    reply_es: { type: "STRING", description: "Die Antwort des Charakters auf Spanisch, 1-3 kurze natürliche Sätze, passend zum Sprachniveau des Lernenden." },
+    reply_de: { type: "STRING", description: "Natürliche deutsche Übersetzung von reply_es." },
+    grammar_tip: {
+      type: "OBJECT",
+      nullable: true,
+      description: "Rückmeldung zu einem klaren Grammatikfehler in der letzten Nachricht des Lernenden. Nur ausfüllen, wenn es einen eindeutigen Fehler gibt und es nicht die erste Nachricht im Gespräch ist; sonst null.",
+      properties: {
+        original: { type: "STRING", description: "Der fehlerhafte Ausdruck aus der Nachricht des Lernenden." },
+        corrected: { type: "STRING", description: "Die korrigierte Version davon." },
+        explanation_de: { type: "STRING", description: "Kurze, freundliche Erklärung auf Deutsch, warum." },
       },
-      vocab_suggestions: {
-        type: "array",
-        description: "0 bis 3 nützliche spanische Wörter aus reply_es, die der Lernende vermutlich noch nicht kennt.",
-        items: {
-          type: "object",
-          properties: {
-            word: { type: "string" },
-            translation_de: { type: "string" },
-          },
-          required: ["word", "translation_de"],
+      required: ["original", "corrected", "explanation_de"],
+    },
+    vocab_suggestions: {
+      type: "ARRAY",
+      description: "0 bis 3 nützliche spanische Wörter aus reply_es, die der Lernende vermutlich noch nicht kennt.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          word: { type: "STRING" },
+          translation_de: { type: "STRING" },
         },
+        required: ["word", "translation_de"],
       },
     },
-    required: ["reply_es", "reply_de", "vocab_suggestions"],
   },
+  required: ["reply_es", "reply_de", "vocab_suggestions"],
 };
 
 function buildSystemPrompt(character, knownWords) {
@@ -394,7 +391,6 @@ function buildSystemPrompt(character, knownWords) {
 Du führst ein Spanisch-Lerngespräch mit einer deutschsprachigen Person auf Niveau ${character.level} zum Thema "${character.topic}".
 
 Regeln:
-- Antworte IMMER ausschließlich über den Funktionsaufruf "character_reply", niemals als normaler Text.
 - reply_es: 1-3 kurze, natürliche Sätze auf Spanisch, passend zum angegebenen Niveau. Bleib im Charakter und reagiere konkret auf das, was der Lernende zuletzt geschrieben hat. Stelle meistens am Ende eine Rückfrage, damit das Gespräch weitergeht.
 - reply_de: eine natürliche deutsche Übersetzung von reply_es.
 - Prüfe die letzte Nachricht des Lernenden auf einen klaren Grammatikfehler (z.B. Verbkonjugation, ser/estar, Artikel-Genus, fehlende Akzente, falsche Präposition, Wortstellung). Wenn du einen eindeutigen Fehler findest, fülle grammar_tip aus. Gibt es keinen Fehler oder ist dies die erste Nachricht im Gespräch, lass grammar_tip komplett weg.
@@ -402,27 +398,24 @@ Regeln:
 - Sei freundlich, geduldig und ermutigend.`;
 }
 
-async function callClaude(apiKey, systemPrompt, apiHistory) {
+async function callGemini(apiKey, systemPrompt, apiHistory) {
   let res;
   try {
-    res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2026-10-21",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1024,
-        output_config: { effort: "low" },
-        system: systemPrompt,
-        tools: [CHARACTER_REPLY_TOOL],
-        tool_choice: { type: "auto" },
-        messages: apiHistory,
-      }),
-    });
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          contents: apiHistory,
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: REPLY_SCHEMA,
+          },
+        }),
+      }
+    );
   } catch (e) {
     throw new Error("Netzwerkfehler. Bist du online?");
   }
@@ -433,21 +426,25 @@ async function callClaude(apiKey, systemPrompt, apiHistory) {
       const data = await res.json();
       if (data && data.error && data.error.message) msg = data.error.message;
     } catch (e) {}
-    if (res.status === 401) msg = "Ungültiger API-Key. Bitte prüfen.";
-    else if (res.status === 429) msg = "Zu viele Anfragen gerade. Versuch's gleich nochmal.";
-    else if (res.status >= 500) msg = "Claude-Server-Fehler. Versuch's nochmal.";
+    if (res.status === 400) msg = "Ungültiger API-Key oder ungültige Anfrage. Bitte prüfen.";
+    else if (res.status === 403) msg = "API-Key ohne Berechtigung. Bitte prüfen.";
+    else if (res.status === 429) msg = "Kostenloses Kontingent gerade ausgeschöpft. Kurz warten und nochmal versuchen.";
+    else if (res.status >= 500) msg = "Gemini-Server-Fehler. Versuch's nochmal.";
     throw new Error(msg);
   }
 
   const data = await res.json();
-  const toolUse = (data.content || []).find(b => b.type === "tool_use" && b.name === "character_reply");
-  if (toolUse) return { parsed: toolUse.input, assistantContent: data.content };
+  const candidate = (data.candidates || [])[0];
+  const parts = (candidate && candidate.content && candidate.content.parts) || [];
+  const text = parts.map(p => p.text || "").join("");
 
-  const textBlock = (data.content || []).find(b => b.type === "text");
-  return {
-    parsed: { reply_es: textBlock ? textBlock.text : "...", reply_de: "", vocab_suggestions: [] },
-    assistantContent: data.content,
-  };
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (e) {
+    parsed = { reply_es: text || "...", reply_de: "", vocab_suggestions: [] };
+  }
+  return { parsed, modelContent: (candidate && candidate.content) || { role: "model", parts: [{ text }] } };
 }
 
 const DAILY_GOAL = 30;
@@ -564,10 +561,10 @@ function App() {
 
     const knownWords = Object.keys(profile.vocab);
     const sys = buildSystemPrompt(ch, knownWords);
-    const history = [{ role: "user", content: "[Das Gespräch beginnt jetzt. Begrüße mich auf Spanisch, stell dich kurz vor und stelle eine erste Frage.]" }];
+    const history = [{ role: "user", parts: [{ text: "[Das Gespräch beginnt jetzt. Begrüße mich auf Spanisch, stell dich kurz vor und stelle eine erste Frage.]" }] }];
     try {
-      const { parsed, assistantContent } = await callClaude(apiKey, sys, history);
-      setApiHistory([...history, { role: "assistant", content: assistantContent }]);
+      const { parsed, modelContent } = await callGemini(apiKey, sys, history);
+      setApiHistory([...history, modelContent]);
       setMessages([{ id: nextId(), sender: "ai", es: parsed.reply_es, de: parsed.reply_de }]);
       setTimeout(() => speak(parsed.reply_es, ch.locale), 300);
     } catch (err) {
@@ -656,11 +653,11 @@ function App() {
 
     const knownWords = Object.keys(profile.vocab);
     const sys = buildSystemPrompt(character, knownWords);
-    const newHistory = [...apiHistory, { role: "user", content: trimmed }];
+    const newHistory = [...apiHistory, { role: "user", parts: [{ text: trimmed }] }];
 
     try {
-      const { parsed, assistantContent } = await callClaude(apiKey, sys, newHistory);
-      setApiHistory([...newHistory, { role: "assistant", content: assistantContent }]);
+      const { parsed, modelContent } = await callGemini(apiKey, sys, newHistory);
+      setApiHistory([...newHistory, modelContent]);
 
       if (parsed.grammar_tip) {
         const tip = { before: parsed.grammar_tip.original, after: parsed.grammar_tip.corrected, explain: parsed.grammar_tip.explanation_de };
@@ -711,7 +708,7 @@ function App() {
           <main id="main-content" className="main">
             {!apiKey && (
               <div className="setup-banner">
-                🔑 Du brauchst einen Anthropic API-Key, damit die Charaktere wirklich mit dir reden.{" "}
+                🔑 Du brauchst einen kostenlosen Gemini API-Key, damit die Charaktere wirklich mit dir reden.{" "}
                 <button className="link-btn" onClick={() => setScreen("apikey")}>Jetzt einrichten</button>
               </div>
             )}
@@ -756,23 +753,25 @@ function App() {
         <React.Fragment>
           <div className="chat-header">
             <button className="back-btn" onClick={() => setScreen("home")} aria-label="Zurück">←</button>
-            <span className="chat-header-name">🔑 Anthropic API-Key</span>
+            <span className="chat-header-name">🔑 Gemini API-Key</span>
           </div>
           <main className="main">
             {apiKey && <div className="apikey-saved">✅ Ein API-Key ist gespeichert.</div>}
             <p className="apikey-help">
-              Bone Banner ruft Claude direkt aus deinem Browser auf. Dafür brauchst du einen eigenen
-              API-Key von <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>.
-              Der Key wird nur lokal in diesem Browser gespeichert (localStorage) und sonst nirgendwo hochgeladen.
-              Jede Nachricht kostet nur einen kleinen Bruchteil eines Cents.
+              Bone Banner ruft Googles Gemini-API (kostenloser Tarif) direkt aus deinem Browser auf.
+              Dafür brauchst du einen eigenen, kostenlosen API-Key von{" "}
+              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">aistudio.google.com/apikey</a>{" "}
+              (keine Kreditkarte nötig). Der Key wird nur lokal in diesem Browser gespeichert (localStorage)
+              und sonst nirgendwo hochgeladen. Der kostenlose Tarif ist rate-limitiert – bei sehr schnellem
+              Nachrichtentempo kann kurz eine Wartemeldung erscheinen.
             </p>
             <input
               type="password"
               className="apikey-input"
-              placeholder="sk-ant-..."
+              placeholder="AIzaSy..."
               value={apiKeyInput}
               onChange={e => setApiKeyInput(e.target.value)}
-              aria-label="Anthropic API-Key"
+              aria-label="Gemini API-Key"
             />
             <button className="btn btn-primary btn-block" onClick={saveApiKey} disabled={!apiKeyInput.trim()}>
               Speichern
