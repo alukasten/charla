@@ -99,6 +99,17 @@
     text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
   }
 
+  /* SETUP BANNER */
+  .setup-banner {
+    background: #FFF1E0; border: 2px dashed var(--accent);
+    border-radius: 16px; padding: 14px 16px; margin-bottom: 18px;
+    font-size: 0.9rem; font-weight: 700; color: var(--text-light);
+  }
+  .link-btn {
+    background: none; border: none; color: var(--primary); font-weight: 800;
+    font-size: 0.9rem; cursor: pointer; text-decoration: underline; padding: 0;
+  }
+
   /* CHARACTER GRID */
   .character-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 18px; }
   .character-card {
@@ -140,7 +151,18 @@
   .btn-secondary { background: var(--secondary); color: white; }
   .btn-secondary:hover { background: #228074; }
   .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+  .btn-danger-outline { background: transparent; color: var(--warn); border: 2px solid var(--warn); }
   .btn-block { margin-top: 10px; }
+
+  /* API KEY SCREEN */
+  .apikey-input {
+    width: 100%; border: 2px solid var(--border); border-radius: 14px;
+    padding: 14px; font-family: var(--font); font-size: 1rem; margin-bottom: 14px;
+  }
+  .apikey-input:focus { outline: none; border-color: var(--primary); }
+  .apikey-help { font-size: 0.85rem; color: var(--text-light); margin-bottom: 18px; line-height: 1.5; }
+  .apikey-help a { color: var(--primary); font-weight: 700; }
+  .apikey-saved { font-size: 0.85rem; color: var(--secondary); font-weight: 700; margin-bottom: 14px; }
 
   /* CHAT */
   .chat-window {
@@ -183,7 +205,6 @@
     width: 26px; height: 26px; border-radius: 50%; font-size: 1rem; font-weight: 900;
     cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   }
-  .vocab-chip-added { color: var(--secondary); font-weight: 900; font-size: 0.85rem; padding: 0 6px; }
 
   /* GRAMMAR TIP */
   .grammar-tip-card {
@@ -200,7 +221,7 @@
     font-size: 1.1rem; cursor: pointer; color: var(--text-light);
   }
 
-  /* SUGGESTED REPLIES */
+  /* STARTER SUGGESTIONS */
   .suggested-replies { padding: 6px 16px; display: flex; flex-direction: column; gap: 8px; }
   .suggested-label { font-size: 0.72rem; font-weight: 700; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.5px; }
   .suggested-chip {
@@ -210,6 +231,12 @@
   .suggested-chip:hover { border-color: var(--primary); background: #FFF1E0; }
   .suggested-chip-es { font-weight: 900; font-size: 0.92rem; }
   .suggested-chip-de { font-weight: 600; font-size: 0.78rem; color: var(--text-light); }
+
+  /* ERROR */
+  .error-banner {
+    margin: 6px 16px 10px; background: #FDEDE7; border: 2px solid var(--warn);
+    border-radius: 16px; padding: 12px 14px; font-size: 0.88rem; font-weight: 700; color: var(--warn);
+  }
 
   .chat-input-row { display: flex; gap: 8px; padding: 12px 16px 16px; border-top: 2px solid var(--border); flex-shrink: 0; }
   .chat-input {
@@ -238,11 +265,6 @@
   .mic-hint { padding: 0 16px 10px; font-size: 0.78rem; color: var(--text-light); font-weight: 600; text-align: center; }
   .mic-hint.error { color: var(--warn); }
   .voice-toggle-btn { margin-left: auto; }
-
-  .ended-banner {
-    margin: 6px 16px 10px; background: #FFF1E0; border: 2px dashed var(--accent);
-    border-radius: 16px; padding: 14px; text-align: center; font-size: 0.92rem; font-weight: 700; color: var(--text-light);
-  }
 
   /* VOCAB SCREEN */
   .vocab-list { display: flex; flex-direction: column; gap: 10px; }
@@ -291,235 +313,142 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
-// ── Vocabulary dictionary (Spanish → German) ───────────────────────────────
-const VOCAB = {
-  hola:"Hallo", llamo:"(ich) heiße", llamas:"(du) heißt/nennst", cómo:"wie",
-  bonito:"schön/hübsch", nombre:"Name", dónde:"wo", eres:"(du) bist", madrid:"Madrid",
-  encanta:"gefällt sehr/liebt", café:"Kaffee", leche:"Milch", mañana:"Morgen/morgen",
-  desayunas:"(du) frühstückst", normalmente:"normalerweise", españa:"Spanien",
-  desayunamos:"wir frühstücken", pan:"Brot", tomate:"Tomate", hambre:"Hunger",
-  semana:"Woche", caminar:"laufen/spazieren gehen", parque:"Park", amigas:"Freundinnen",
-  placer:"Vergnügen", pronto:"bald",
-  onda:"(qué onda = was geht ab)", viajado:"gereist", méxico:"Mexiko", comida:"Essen",
-  favorita:"Lieblings-", rico:"lecker", maíz:"Mais", frijoles:"Bohnen", chile:"Chili",
-  picante:"scharf", prefieres:"(du) bevorzugst", playa:"Strand", montaña:"Berg",
-  elección:"Wahl", mar:"Meer", idiomas:"Sprachen", hermoso:"schön", difícil:"schwierig",
-  práctica:"Übung", maestro:"Meister", gusto:"Vergnügen/Geschmack", platicar:"plaudern",
-  música:"Musik", bailar:"tanzen", tango:"Tango", escuchás:"(du) hörst",
-  conecta:"verbindet", personas:"Menschen", concierto:"Konzert", vivo:"live/lebendig",
-  cantante:"Sänger(in)", envidia:"Neid", charlar:"plaudern", chau:"tschüss",
-  dedicas:"(a qué te dedicas = was machst du beruflich)", trabajas:"(du) arbeitest",
-  equipo:"Team", valorado:"geschätzt", ambiente:"Umfeld/Atmosphäre", laboral:"beruflich",
-  planes:"Pläne", futuro:"Zukunft", prometedor:"vielversprechend", admiro:"ich bewundere",
-  metas:"Ziele", presión:"Druck", cualidad:"Eigenschaft", éxito:"Erfolg", conversar:"sich unterhalten",
-  viajar:"reisen", paisajes:"Landschaften", desierto:"Wüste", patagonia:"Patagonien",
-  senderismo:"Wandern", deporte:"Sport", activo:"aktiv", sudamérica:"Südamerika",
-  naturaleza:"Natur", animales:"Tiere", pingüinos:"Pinguine", maravillosos:"wunderbar",
-  sur:"Süden", viaje:"Reise",
-  relajante:"entspannend", descanso:"Ruhe/ich ruhe mich aus", películas:"Filme",
-  depende:"es kommt darauf an", gracias:"danke", alemania:"Deutschland",
-};
-
-// ── Grammar checker (simple pattern-based tips) ────────────────────────────
-const NOUN_GENDER = {
-  casa:"f", libro:"m", problema:"m", mesa:"f", perro:"m", gato:"m", comida:"f",
-  viaje:"m", ciudad:"f", país:"m", familia:"f", trabajo:"m", dinero:"m", tiempo:"m",
-  coche:"m", amiga:"f", amigo:"m", playa:"f", montaña:"f", mar:"m", música:"f", idioma:"m",
-};
-const ESTAR_ADJ = ["cansado","cansada","feliz","triste","enfermo","enferma","ocupado",
-  "ocupada","aburrido","aburrida","enojado","enojada","nervioso","nerviosa","contento","contenta"];
-const SER_TO_ESTAR = { soy:"estoy", eres:"estás", es:"está", somos:"estamos", sois:"estáis", son:"están" };
-const ACCENT_WORDS = { como:"cómo", cuando:"cuándo", donde:"dónde", que:"qué", quien:"quién", cual:"cuál", cuanto:"cuánto", cuantos:"cuántos" };
-
-function checkGrammar(text) {
-  const t = text.trim();
-  if (!t) return null;
-  const lower = t.toLowerCase();
-
-  if (lower.includes("?") && !t.includes("¿")) {
-    return { title:"Fragezeichen am Anfang", before:t, after:"¿" + t, explain:"Im Spanischen beginnt eine Frage mit einem umgekehrten Fragezeichen ¿." };
-  }
-  if (lower.includes("!") && !t.includes("¡")) {
-    return { title:"Ausrufezeichen am Anfang", before:t, after:"¡" + t, explain:"Im Spanischen beginnt ein Ausruf mit einem umgekehrten Ausrufezeichen ¡." };
-  }
-  if (lower.includes("?")) {
-    for (const word of Object.keys(ACCENT_WORDS)) {
-      const re = new RegExp("\\b" + word + "\\b", "i");
-      if (re.test(lower)) {
-        return {
-          title:"Fehlender Akzent bei Fragewörtern",
-          before: word, after: ACCENT_WORDS[word],
-          explain: `Als Fragewort trägt „${word}" einen Akzent: „${ACCENT_WORDS[word]}".`,
-        };
-      }
-    }
-  }
-  const serMatch = lower.match(new RegExp("\\b(soy|eres|es|somos|sois|son)\\s+(" + ESTAR_ADJ.join("|") + ")\\b"));
-  if (serMatch) {
-    const [, serForm, adj] = serMatch;
-    return {
-      title:"ser vs. estar",
-      before: serForm + " " + adj, after: SER_TO_ESTAR[serForm] + " " + adj,
-      explain: "Für vorübergehende Zustände (Gefühle, Befinden) benutzt man estar statt ser.",
-    };
-  }
-  const ageMatch = lower.match(/\b(soy|eres|es)\s+(\d{1,3})\s+años\b/);
-  if (ageMatch) {
-    const map = { soy:"tengo", eres:"tienes", es:"tiene" };
-    return {
-      title:"Alter ausdrücken",
-      before: ageMatch[1] + " " + ageMatch[2] + " años", after: map[ageMatch[1]] + " " + ageMatch[2] + " años",
-      explain: "Im Spanischen sagt man das Alter mit tener (haben), nicht mit ser.",
-    };
-  }
-  const artMatch = lower.match(/\b(un|una|el|la)\s+([a-záéíóúüñ]+)\b/);
-  if (artMatch) {
-    const [, art, noun] = artMatch;
-    const gender = NOUN_GENDER[noun];
-    if (gender) {
-      const wantArt = art === "un" || art === "el" ? (gender === "m" ? art : (art === "un" ? "una" : "la")) : (gender === "f" ? art : (art === "una" ? "un" : "el"));
-      if (wantArt !== art) {
-        return {
-          title:"Artikel-Genus",
-          before: art + " " + noun, after: wantArt + " " + noun,
-          explain: `„${noun}" ist im Spanischen ${gender === "m" ? "männlich" : "weiblich"} (${gender === "m" ? "el/un" : "la/una"}).`,
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function getVocabSuggestions(text, savedKeys) {
-  const words = (text.toLowerCase().match(/[a-záéíóúüñ]+/gi) || []);
-  const seen = new Set();
-  const result = [];
-  for (const w of words) {
-    if (seen.has(w) || savedKeys.has(w)) continue;
-    if (VOCAB[w]) {
-      seen.add(w);
-      result.push({ word: w, translation: VOCAB[w] });
-      if (result.length >= 3) break;
-    }
-  }
-  return result;
-}
-
 // ── Characters ──────────────────────────────────────────────────────────────
 const CHARACTERS = [
   {
     id:"sofia", name:"Sofía", flag:"🇪🇸", avatar:"👩🏻‍🦰", country:"Madrid, España",
     level:"Anfänger (A1)", topic:"Alltag & Café", locale:"es-ES",
-    script:[
-      { es:"¡Hola! Me llamo Sofía. ¿Cómo te llamas tú?", de:"Hallo! Ich heiße Sofía. Wie heißt du?" },
-      { es:"¡Qué bonito nombre! ¿De dónde eres?", de:"Was für ein schöner Name! Woher kommst du?" },
-      { es:"¡Genial! Yo soy de Madrid. ¿Te gusta el café?", de:"Toll! Ich komme aus Madrid. Magst du Kaffee?" },
-      { es:"A mí me encanta el café con leche por la mañana. ¿Qué desayunas normalmente?", de:"Ich liebe Milchkaffee am Morgen. Was frühstückst du normalerweise?" },
-      { es:"Suena delicioso. Aquí en España desayunamos pan con tomate. ¿Tienes hambre ahora?", de:"Klingt lecker. Hier in Spanien frühstücken wir Brot mit Tomate. Hast du jetzt Hunger?" },
-      { es:"Jaja, ¡yo también! Oye, ¿qué haces normalmente los fines de semana?", de:"Haha, ich auch! Sag mal, was machst du normalerweise am Wochenende?" },
-      { es:"Qué bien. Yo suelo caminar por el parque con mis amigas. Bueno, ha sido un placer hablar contigo. ¡Hasta pronto!", de:"Wie schön. Ich gehe normalerweise mit meinen Freundinnen im Park spazieren. Nun, es war schön, mit dir zu sprechen. Bis bald!" },
-    ],
-    keywordResponses:[
-      { keywords:["hambre"], es:"¡Vamos a comer unas tapas entonces!", de:"Dann lass uns Tapas essen!" },
-      { keywords:["adiós","chao"], es:"¡Adiós! Que tengas un buen día.", de:"Tschüss! Einen schönen Tag noch." },
-    ],
+    persona:"Du bist herzlich und geduldig, redest gern über Alltag, Kaffee und das Leben in Madrid. Du benutzt sehr einfache, kurze Sätze, passend für absolute Anfänger.",
   },
   {
     id:"diego", name:"Diego", flag:"🇲🇽", avatar:"🧑🏽", country:"Ciudad de México",
     level:"Mittel (A2–B1)", topic:"Reisen & Essen", locale:"es-MX",
-    script:[
-      { es:"¡Qué onda! Soy Diego, de Ciudad de México. ¿Has viajado a México alguna vez?", de:"Was geht! Ich bin Diego, aus Mexiko-Stadt. Warst du schon mal in Mexiko?" },
-      { es:"¡Deberías venir! La comida aquí es increíble. ¿Cuál es tu comida favorita?", de:"Du solltest kommen! Das Essen hier ist unglaublich. Was ist dein Lieblingsessen?" },
-      { es:"Mmm, qué rico. Aquí comemos mucho maíz, frijoles y chile. ¿Te gusta la comida picante?", de:"Mmm, lecker. Hier essen wir viel Mais, Bohnen und Chili. Magst du scharfes Essen?" },
-      { es:"Jaja, entiendo, ¡el picante no es para todos! ¿Prefieres viajar a la playa o a la montaña?", de:"Haha, verstehe, scharf ist nicht für jeden! Reist du lieber ans Meer oder in die Berge?" },
-      { es:"Buena elección. Yo también amo el mar. ¿Cuántos idiomas hablas?", de:"Gute Wahl. Ich liebe das Meer auch. Wie viele Sprachen sprichst du?" },
-      { es:"¡Impresionante! El español es un idioma hermoso, ¿verdad? ¿Qué es lo más difícil para ti?", de:"Beeindruckend! Spanisch ist eine schöne Sprache, oder? Was ist für dich am schwierigsten?" },
-      { es:"Te entiendo, la práctica hace al maestro. Fue un gusto platicar contigo, ¡nos vemos pronto!", de:"Ich verstehe dich, Übung macht den Meister. Es war schön, mit dir zu plaudern, bis bald!" },
-    ],
-    keywordResponses:[
-      { keywords:["picante"], es:"¡A mí también me encanta el picante!", de:"Ich liebe scharfes Essen auch!" },
-      { keywords:["playa"], es:"¡La playa es hermosa en Cancún!", de:"Der Strand in Cancún ist wunderschön!" },
-    ],
+    persona:"Du bist locker und humorvoll, redest gern über Reisen, Essen und mexikanische Kultur. Du verwendest Sätze mittlerer Komplexität.",
   },
   {
     id:"valentina", name:"Valentina", flag:"🇦🇷", avatar:"👩🏽", country:"Buenos Aires, Argentina",
     level:"Mittel (B1)", topic:"Kultur & Musik", locale:"es-AR",
-    script:[
-      { es:"¡Hola! Soy Valentina, de Buenos Aires. ¿Te gusta la música?", de:"Hallo! Ich bin Valentina, aus Buenos Aires. Magst du Musik?" },
-      { es:"¡Qué bueno! Acá en Argentina el tango es muy importante. ¿Sabes bailar?", de:"Wie schön! Hier in Argentinien ist der Tango sehr wichtig. Kannst du tanzen?" },
-      { es:"No te preocupes, yo tampoco bailaba bien al principio. ¿Qué tipo de música escuchás normalmente?", de:"Keine Sorge, ich konnte anfangs auch nicht gut tanzen. Welche Art von Musik hörst du normalerweise?" },
-      { es:"Me parece genial. La música conecta a las personas, ¿no crees?", de:"Ich finde das großartig. Musik verbindet Menschen, findest du nicht?" },
-      { es:"Totalmente de acuerdo. ¿Has ido alguna vez a un concierto en vivo?", de:"Absolut einverstanden. Warst du schon mal auf einem Live-Konzert?" },
-      { es:"¡Qué envidia! Yo fui a un concierto el mes pasado y fue increíble. ¿Tienes algún cantante favorito?", de:"Wie beneidenswert! Ich war letzten Monat auf einem Konzert und es war unglaublich. Hast du einen Lieblingssänger?" },
-      { es:"Buen gusto. Bueno, fue un placer charlar de música contigo. ¡Chau, nos hablamos pronto!", de:"Guter Geschmack. Nun, es war ein Vergnügen, mit dir über Musik zu plaudern. Tschüss, wir sprechen uns bald!" },
-    ],
-    keywordResponses:[
-      { keywords:["tango"], es:"¡El tango nació justo acá en Buenos Aires!", de:"Der Tango ist genau hier in Buenos Aires entstanden!" },
-    ],
+    persona:"Du bist lebhaft und leidenschaftlich für Musik und Tango, redest gern über Kultur in Buenos Aires. Du benutzt das argentinische 'vos' (z.B. 'tenés', 'escuchás') statt 'tú'.",
   },
   {
     id:"mateo", name:"Mateo", flag:"🇨🇴", avatar:"🧑🏻‍💼", country:"Bogotá, Colombia",
     level:"Fortgeschritten (B1–B2)", topic:"Beruf & Small Talk", locale:"es-CO",
-    script:[
-      { es:"Buenos días, mucho gusto. Me llamo Mateo y soy de Bogotá. ¿A qué te dedicas?", de:"Guten Morgen, sehr erfreut. Ich heiße Mateo und komme aus Bogotá. Was machst du beruflich?" },
-      { es:"Interesante. ¿Y hace cuánto tiempo trabajas en eso?", de:"Interessant. Und seit wann arbeitest du daran?" },
-      { es:"Muy bien. En Colombia el trabajo en equipo es muy valorado. ¿Cómo es el ambiente laboral donde tú trabajas?", de:"Sehr gut. In Kolumbien wird Teamarbeit sehr geschätzt. Wie ist das Arbeitsklima bei dir?" },
-      { es:"Qué bueno escuchar eso. ¿Cuáles son tus planes profesionales para el futuro?", de:"Schön, das zu hören. Was sind deine beruflichen Pläne für die Zukunft?" },
-      { es:"Suena muy prometedor. La verdad, admiro a la gente con metas claras. ¿Trabajas bien bajo presión?", de:"Klingt sehr vielversprechend. Ehrlich gesagt bewundere ich Menschen mit klaren Zielen. Arbeitest du gut unter Druck?" },
-      { es:"Excelente cualidad para el mundo laboral. Bueno, fue un gusto conversar contigo sobre trabajo. ¡Que tengas éxito!", de:"Ausgezeichnete Eigenschaft für die Arbeitswelt. Nun, es war schön, mit dir über die Arbeit zu sprechen. Viel Erfolg!" },
-    ],
-    keywordResponses:[],
+    persona:"Du bist professionell und reflektiert, redest gern über Beruf und Karriere. Du sprichst in vollständigeren, etwas anspruchsvolleren Sätzen passend zum höheren Niveau.",
   },
   {
     id:"camila", name:"Camila", flag:"🇨🇱", avatar:"👩🏼‍🦱", country:"Chile",
     level:"Anfänger–Mittel (A2)", topic:"Reisen & Natur", locale:"es-CL",
-    script:[
-      { es:"¡Hola! Soy Camila, de Chile. ¿Te gusta viajar?", de:"Hallo! Ich bin Camila, aus Chile. Reist du gerne?" },
-      { es:"¡Qué lindo! Chile tiene paisajes increíbles, desde el desierto hasta la Patagonia. ¿Prefieres las montañas o el mar?", de:"Wie schön! Chile hat unglaubliche Landschaften, von der Wüste bis Patagonien. Magst du lieber Berge oder Meer?" },
-      { es:"Buena elección. A mí me encanta hacer senderismo en la montaña. ¿Practicas algún deporte?", de:"Gute Wahl. Ich liebe es, in den Bergen zu wandern. Treibst du irgendeinen Sport?" },
-      { es:"¡Qué bueno mantenerse activo! ¿Has visitado algún país de Sudamérica?", de:"Wie schön, aktiv zu bleiben! Warst du schon in einem südamerikanischen Land?" },
-      { es:"Te lo recomiendo muchísimo, la naturaleza acá es única. ¿Qué animales te gustaría ver?", de:"Ich empfehle es dir sehr, die Natur hier ist einzigartig. Welche Tiere würdest du gerne sehen?" },
-      { es:"Los pingüinos son maravillosos, se pueden ver en el sur de Chile. Bueno, fue un placer hablar de viajes contigo. ¡Buen viaje!", de:"Pinguine sind wunderbar, man kann sie im Süden Chiles sehen. Nun, es war schön, mit dir über Reisen zu sprechen. Gute Reise!" },
-    ],
-    keywordResponses:[],
+    persona:"Du bist abenteuerlustig und naturverbunden, redest gern über Reisen, Wandern und die Natur Chiles. Du benutzt einfache bis mittlere Sätze.",
   },
 ];
 
-// ── Suggested reply pools (rotate by turn index) ───────────────────────────
-const REPLY_POOL = [
-  [
-    { es:"Me llamo Alex y soy de Alemania.", de:"Ich heiße Alex und komme aus Deutschland." },
-    { es:"¡Mucho gusto! Yo soy de Alemania.", de:"Sehr erfreut! Ich komme aus Deutschland." },
-    { es:"Hola, ¿cómo estás?", de:"Hallo, wie geht es dir?" },
-  ],
-  [
-    { es:"Sí, me gusta mucho.", de:"Ja, das mag ich sehr." },
-    { es:"No, la verdad no mucho.", de:"Nein, ehrlich gesagt nicht so sehr." },
-    { es:"¡Qué interesante! Cuéntame más.", de:"Wie interessant! Erzähl mir mehr." },
-  ],
-  [
-    { es:"Prefiero el mar, es más relajante.", de:"Ich bevorzuge das Meer, es ist entspannender." },
-    { es:"Prefiero la montaña, me gusta caminar.", de:"Ich bevorzuge die Berge, ich gehe gern wandern." },
-    { es:"Realmente me gustan las dos opciones.", de:"Ich mag eigentlich beide Optionen." },
-  ],
-  [
-    { es:"Normalmente descanso y veo películas.", de:"Normalerweise entspanne ich mich und schaue Filme." },
-    { es:"Suelo hacer deporte los fines de semana.", de:"Ich treibe am Wochenende meistens Sport." },
-    { es:"Depende del día, la verdad.", de:"Kommt ehrlich gesagt auf den Tag an." },
-  ],
-  [
-    { es:"Hablo dos idiomas.", de:"Ich spreche zwei Sprachen." },
-    { es:"Solo hablo un poco de español.", de:"Ich spreche nur ein bisschen Spanisch." },
-    { es:"Todavía estoy aprendiendo.", de:"Ich lerne noch." },
-  ],
-  [
-    { es:"¡Muchas gracias! Fue un placer.", de:"Vielen Dank! Es war mir eine Freude." },
-    { es:"¡Nos vemos pronto!", de:"Bis bald!" },
-    { es:"Adiós, que tengas un buen día.", de:"Tschüss, einen schönen Tag noch." },
-  ],
+// ── Starter suggestions (shown only before the learner's first message) ────
+const STARTER_SUGGESTIONS = [
+  { es:"Me llamo Alex y soy de Alemania.", de:"Ich heiße Alex und komme aus Deutschland." },
+  { es:"¡Mucho gusto! Yo soy de Alemania.", de:"Sehr erfreut! Ich komme aus Deutschland." },
+  { es:"Hola, ¿cómo estás?", de:"Hallo, wie geht es dir?" },
 ];
 
-const CLOSING = { es:"Fue un placer hablar contigo. ¿Quieres terminar la conversación?", de:"Es war schön, mit dir zu sprechen. Möchtest du das Gespräch beenden?" };
+// ── Claude API ───────────────────────────────────────────────────────────────
+const API_KEY_STORAGE = "boneBannerApiKey";
+const MODEL = "claude-opus-5-5";
+
+const CHARACTER_REPLY_TOOL = {
+  name: "character_reply",
+  description: "Antwort des Charakters im Spanisch-Lerngespräch, inklusive optionalem Grammatik-Feedback und Vokabel-Vorschlägen.",
+  input_schema: {
+    type: "object",
+    properties: {
+      reply_es: { type: "string", description: "Die Antwort des Charakters auf Spanisch, 1-3 kurze natürliche Sätze, passend zum Sprachniveau des Lernenden." },
+      reply_de: { type: "string", description: "Natürliche deutsche Übersetzung von reply_es." },
+      grammar_tip: {
+        type: "object",
+        description: "Rückmeldung zu einem klaren Grammatikfehler in der letzten Nachricht des Lernenden. Nur ausfüllen, wenn es einen eindeutigen Fehler gibt und es nicht die erste Nachricht im Gespräch ist; sonst dieses Feld komplett weglassen.",
+        properties: {
+          original: { type: "string", description: "Der fehlerhafte Ausdruck aus der Nachricht des Lernenden." },
+          corrected: { type: "string", description: "Die korrigierte Version davon." },
+          explanation_de: { type: "string", description: "Kurze, freundliche Erklärung auf Deutsch, warum." },
+        },
+        required: ["original", "corrected", "explanation_de"],
+      },
+      vocab_suggestions: {
+        type: "array",
+        description: "0 bis 3 nützliche spanische Wörter aus reply_es, die der Lernende vermutlich noch nicht kennt.",
+        items: {
+          type: "object",
+          properties: {
+            word: { type: "string" },
+            translation_de: { type: "string" },
+          },
+          required: ["word", "translation_de"],
+        },
+      },
+    },
+    required: ["reply_es", "reply_de", "vocab_suggestions"],
+  },
+};
+
+function buildSystemPrompt(character, knownWords) {
+  return `Du bist ${character.name}, eine Person aus ${character.country}. ${character.persona}
+
+Du führst ein Spanisch-Lerngespräch mit einer deutschsprachigen Person auf Niveau ${character.level} zum Thema "${character.topic}".
+
+Regeln:
+- Antworte IMMER ausschließlich über den Funktionsaufruf "character_reply", niemals als normaler Text.
+- reply_es: 1-3 kurze, natürliche Sätze auf Spanisch, passend zum angegebenen Niveau. Bleib im Charakter und reagiere konkret auf das, was der Lernende zuletzt geschrieben hat. Stelle meistens am Ende eine Rückfrage, damit das Gespräch weitergeht.
+- reply_de: eine natürliche deutsche Übersetzung von reply_es.
+- Prüfe die letzte Nachricht des Lernenden auf einen klaren Grammatikfehler (z.B. Verbkonjugation, ser/estar, Artikel-Genus, fehlende Akzente, falsche Präposition, Wortstellung). Wenn du einen eindeutigen Fehler findest, fülle grammar_tip aus. Gibt es keinen Fehler oder ist dies die erste Nachricht im Gespräch, lass grammar_tip komplett weg.
+- Schlage 0 bis 3 spanische Wörter aus deiner eigenen reply_es als vocab_suggestions vor, die für das Niveau ${character.level} lehrreich sind. Diese Wörter kennt der Lernende schon, schlage sie nicht erneut vor: ${knownWords.length ? knownWords.join(", ") : "(noch keine)"}.
+- Sei freundlich, geduldig und ermutigend.`;
+}
+
+async function callClaude(apiKey, systemPrompt, apiHistory) {
+  let res;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2026-10-21",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1024,
+        output_config: { effort: "low" },
+        system: systemPrompt,
+        tools: [CHARACTER_REPLY_TOOL],
+        tool_choice: { type: "auto" },
+        messages: apiHistory,
+      }),
+    });
+  } catch (e) {
+    throw new Error("Netzwerkfehler. Bist du online?");
+  }
+
+  if (!res.ok) {
+    let msg = "Fehler beim Abruf (HTTP " + res.status + ")";
+    try {
+      const data = await res.json();
+      if (data && data.error && data.error.message) msg = data.error.message;
+    } catch (e) {}
+    if (res.status === 401) msg = "Ungültiger API-Key. Bitte prüfen.";
+    else if (res.status === 429) msg = "Zu viele Anfragen gerade. Versuch's gleich nochmal.";
+    else if (res.status >= 500) msg = "Claude-Server-Fehler. Versuch's nochmal.";
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  const toolUse = (data.content || []).find(b => b.type === "tool_use" && b.name === "character_reply");
+  if (toolUse) return { parsed: toolUse.input, assistantContent: data.content };
+
+  const textBlock = (data.content || []).find(b => b.type === "text");
+  return {
+    parsed: { reply_es: textBlock ? textBlock.text : "...", reply_de: "", vocab_suggestions: [] },
+    assistantContent: data.content,
+  };
+}
 
 const DAILY_GOAL = 30;
 const PROFILE_KEY = "boneBannerProfile";
@@ -553,11 +482,12 @@ const SPEECH_RECOGNITION = typeof window !== "undefined" ? (window.SpeechRecogni
 // ── App ─────────────────────────────────────────────────────────────────────
 function App() {
   const [profile, setProfile] = useState(loadProfile);
+  const [apiKey, setApiKey] = useState(() => { try { return localStorage.getItem(API_KEY_STORAGE) || ""; } catch (e) { return ""; } });
+  const [apiKeyInput, setApiKeyInput] = useState("");
   const [screen, setScreen] = useState("home");
   const [character, setCharacter] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [turnIndex, setTurnIndex] = useState(0);
-  const [ended, setEnded] = useState(false);
+  const [apiHistory, setApiHistory] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [input, setInput] = useState("");
   const [currentTip, setCurrentTip] = useState(null);
@@ -566,6 +496,7 @@ function App() {
   const [sessionXP, setSessionXP] = useState(0);
   const [sessionNewVocab, setSessionNewVocab] = useState([]);
   const [sessionTips, setSessionTips] = useState([]);
+  const [apiError, setApiError] = useState("");
   const [voiceOn, setVoiceOn] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [micError, setMicError] = useState("");
@@ -584,11 +515,25 @@ function App() {
 
   useEffect(() => {
     if (chatWindowRef.current) chatWindowRef.current.scrollTop = chatWindowRef.current.scrollHeight;
-  }, [messages, isTyping, vocabSuggestions, currentTip]);
+  }, [messages, isTyping, vocabSuggestions, currentTip, apiError]);
 
   function addXP(amount) {
     setProfile(prev => ({ ...prev, xp: prev.xp + amount, dailyXP: prev.dailyXP + amount }));
     setSessionXP(v => v + amount);
+  }
+
+  function saveApiKey() {
+    const trimmed = apiKeyInput.trim();
+    if (!trimmed) return;
+    try { localStorage.setItem(API_KEY_STORAGE, trimmed); } catch (e) {}
+    setApiKey(trimmed);
+    setApiKeyInput("");
+    setScreen("home");
+  }
+
+  function removeApiKey() {
+    try { localStorage.removeItem(API_KEY_STORAGE); } catch (e) {}
+    setApiKey("");
   }
 
   function speak(text, lang) {
@@ -601,21 +546,35 @@ function App() {
     window.speechSynthesis.speak(utt);
   }
 
-  function openCharacter(ch) {
+  async function openCharacter(ch) {
+    if (!apiKey) { setScreen("apikey"); return; }
     setCharacter(ch);
-    setMessages([{ id: nextId(), sender: "ai", es: ch.script[0].es, de: ch.script[0].de }]);
-    setTurnIndex(1);
-    setEnded(false);
+    setMessages([]);
     setInput("");
     setCurrentTip(null);
-    setVocabSuggestions(getVocabSuggestions(ch.script[0].es, new Set(Object.keys(profile.vocab))));
+    setVocabSuggestions([]);
     setRevealed(new Set());
     setSessionXP(0);
     setSessionNewVocab([]);
     setSessionTips([]);
     setMicError("");
+    setApiError("");
     setScreen("chat");
-    setTimeout(() => speak(ch.script[0].es, ch.locale), 400);
+    setIsTyping(true);
+
+    const knownWords = Object.keys(profile.vocab);
+    const sys = buildSystemPrompt(ch, knownWords);
+    const history = [{ role: "user", content: "[Das Gespräch beginnt jetzt. Begrüße mich auf Spanisch, stell dich kurz vor und stelle eine erste Frage.]" }];
+    try {
+      const { parsed, assistantContent } = await callClaude(apiKey, sys, history);
+      setApiHistory([...history, { role: "assistant", content: assistantContent }]);
+      setMessages([{ id: nextId(), sender: "ai", es: parsed.reply_es, de: parsed.reply_de }]);
+      setTimeout(() => speak(parsed.reply_es, ch.locale), 300);
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
+      setIsTyping(false);
+    }
   }
 
   function goHome() {
@@ -626,7 +585,7 @@ function App() {
   }
 
   function startListening() {
-    if (!SPEECH_RECOGNITION || isTyping || ended) return;
+    if (!SPEECH_RECOGNITION || isTyping) return;
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setMicError("");
     const recog = new SPEECH_RECOGNITION();
@@ -670,51 +629,67 @@ function App() {
   }
 
   function saveVocab(word, translation) {
-    if (profile.vocab[word]) return;
-    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [word]: { translation, savedAt: Date.now(), learned: false } } }));
+    const key = word.toLowerCase();
+    if (profile.vocab[key]) return;
+    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [key]: { word, translation, savedAt: Date.now(), learned: false } } }));
     setVocabSuggestions(prev => prev.filter(v => v.word !== word));
     setSessionNewVocab(prev => [...prev, { word, translation }]);
     addXP(5);
   }
 
-  function toggleLearned(word) {
-    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [word]: { ...prev.vocab[word], learned: !prev.vocab[word].learned } } }));
+  function toggleLearned(key) {
+    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [key]: { ...prev.vocab[key], learned: !prev.vocab[key].learned } } }));
   }
 
-  function sendMessage(text) {
+  async function sendMessage(text) {
     const trimmed = text.trim();
-    if (!trimmed || isTyping || ended) return;
+    if (!trimmed || isTyping) return;
 
     setProfile(prev => ensureDaily({ ...prev }));
-
-    const tip = checkGrammar(trimmed);
-    setCurrentTip(tip);
-    if (tip) setSessionTips(prev => [...prev, tip]);
-
-    setMessages(prev => [...prev, { id: nextId(), sender: "user", text: trimmed, hasTip: !!tip }]);
+    setMessages(prev => [...prev, { id: nextId(), sender: "user", text: trimmed }]);
     setInput("");
     setVocabSuggestions([]);
+    setCurrentTip(null);
+    setApiError("");
     addXP(8);
-
-    const lower = trimmed.toLowerCase();
-    const keywordHit = (character.keywordResponses || []).find(kr => kr.keywords.some(k => lower.includes(k)));
-    const usingScript = turnIndex < character.script.length;
-    const reply = keywordHit || (usingScript ? character.script[turnIndex] : CLOSING);
-    const willEnd = !keywordHit && !usingScript;
-
     setIsTyping(true);
-    setTimeout(() => {
+
+    const knownWords = Object.keys(profile.vocab);
+    const sys = buildSystemPrompt(character, knownWords);
+    const newHistory = [...apiHistory, { role: "user", content: trimmed }];
+
+    try {
+      const { parsed, assistantContent } = await callClaude(apiKey, sys, newHistory);
+      setApiHistory([...newHistory, { role: "assistant", content: assistantContent }]);
+
+      if (parsed.grammar_tip) {
+        const tip = { before: parsed.grammar_tip.original, after: parsed.grammar_tip.corrected, explain: parsed.grammar_tip.explanation_de };
+        setCurrentTip(tip);
+        setSessionTips(prev => [...prev, tip]);
+      }
+      setMessages(prev => {
+        const updated = [...prev];
+        if (parsed.grammar_tip) {
+          for (let i = updated.length - 1; i >= 0; i--) {
+            if (updated[i].sender === "user") { updated[i] = { ...updated[i], hasTip: true }; break; }
+          }
+        }
+        return [...updated, { id: nextId(), sender: "ai", es: parsed.reply_es, de: parsed.reply_de }];
+      });
+
+      const newWords = (parsed.vocab_suggestions || []).filter(v => v.word && !profile.vocab[v.word.toLowerCase()])
+        .map(v => ({ word: v.word, translation: v.translation_de }));
+      setVocabSuggestions(newWords);
+      speak(parsed.reply_es, character.locale);
+    } catch (err) {
+      setApiError(err.message);
+    } finally {
       setIsTyping(false);
-      setMessages(prev => [...prev, { id: nextId(), sender: "ai", es: reply.es, de: reply.de }]);
-      setVocabSuggestions(getVocabSuggestions(reply.es, new Set(Object.keys(profile.vocab).concat(sessionNewVocab.map(v => v.word)))));
-      setTurnIndex(idx => idx + 1);
-      if (willEnd) setEnded(true);
-      speak(reply.es, character.locale);
-    }, 700);
+    }
   }
 
   function finishConversation() {
-    if (ended) addXP(15);
+    if (userMsgCount > 0) addXP(10);
     goHome();
     setScreen("summary");
   }
@@ -734,6 +709,12 @@ function App() {
             <div className="subtitle">Sprich Spanisch mit KI-Charakteren</div>
           </div>
           <main id="main-content" className="main">
+            {!apiKey && (
+              <div className="setup-banner">
+                🔑 Du brauchst einen Anthropic API-Key, damit die Charaktere wirklich mit dir reden.{" "}
+                <button className="link-btn" onClick={() => setScreen("apikey")}>Jetzt einrichten</button>
+              </div>
+            )}
             <div className="stats-row">
               <div className="stat-badge"><div className="stat-emoji">🔥</div><div className="stat-value">{profile.streak}</div><div className="stat-label">Tage Streak</div></div>
               <div className="stat-badge"><div className="stat-emoji">⭐</div><div className="stat-value">{profile.xp}</div><div className="stat-label">XP</div></div>
@@ -764,6 +745,43 @@ function App() {
             <button className="btn btn-secondary btn-block" onClick={() => setScreen("vocab")}>
               📖 Mein Wortschatz üben
             </button>
+            <button className="btn btn-outline btn-block" onClick={() => setScreen("apikey")}>
+              ⚙️ API-Key verwalten
+            </button>
+          </main>
+        </React.Fragment>
+      )}
+
+      {screen === "apikey" && (
+        <React.Fragment>
+          <div className="chat-header">
+            <button className="back-btn" onClick={() => setScreen("home")} aria-label="Zurück">←</button>
+            <span className="chat-header-name">🔑 Anthropic API-Key</span>
+          </div>
+          <main className="main">
+            {apiKey && <div className="apikey-saved">✅ Ein API-Key ist gespeichert.</div>}
+            <p className="apikey-help">
+              Bone Banner ruft Claude direkt aus deinem Browser auf. Dafür brauchst du einen eigenen
+              API-Key von <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>.
+              Der Key wird nur lokal in diesem Browser gespeichert (localStorage) und sonst nirgendwo hochgeladen.
+              Jede Nachricht kostet nur einen kleinen Bruchteil eines Cents.
+            </p>
+            <input
+              type="password"
+              className="apikey-input"
+              placeholder="sk-ant-..."
+              value={apiKeyInput}
+              onChange={e => setApiKeyInput(e.target.value)}
+              aria-label="Anthropic API-Key"
+            />
+            <button className="btn btn-primary btn-block" onClick={saveApiKey} disabled={!apiKeyInput.trim()}>
+              Speichern
+            </button>
+            {apiKey && (
+              <button className="btn btn-danger-outline btn-block" onClick={removeApiKey}>
+                API-Key entfernen
+              </button>
+            )}
           </main>
         </React.Fragment>
       )}
@@ -825,53 +843,47 @@ function App() {
           {currentTip && (
             <div className="grammar-tip-card">
               <button className="grammar-tip-close" onClick={() => setCurrentTip(null)} aria-label="Tipp schließen">×</button>
-              <div className="grammar-tip-header">💡 {currentTip.title}</div>
+              <div className="grammar-tip-header">💡 Grammatik-Tipp</div>
               <div className="grammar-tip-row"><span className="grammar-tip-before">{currentTip.before}</span> → <span className="grammar-tip-after">{currentTip.after}</span></div>
               <div className="grammar-tip-explain">{currentTip.explain}</div>
             </div>
           )}
 
-          {ended ? (
-            <div className="ended-banner">
-              🎉 Diese Unterhaltung ist zu Ende.
-              <button className="btn btn-primary btn-block" onClick={finishConversation}>✅ Gespräch beenden</button>
+          {apiError && <div className="error-banner">⚠️ {apiError}</div>}
+
+          {!isTyping && userMsgCount === 0 && !apiError && (
+            <div className="suggested-replies">
+              <div className="suggested-label">Vorschläge</div>
+              {STARTER_SUGGESTIONS.map((r, i) => (
+                <button key={i} className="suggested-chip" onClick={() => sendMessage(r.es)}>
+                  <div className="suggested-chip-es">{r.es}</div>
+                  <div className="suggested-chip-de">{r.de}</div>
+                </button>
+              ))}
             </div>
-          ) : (
-            <React.Fragment>
-              {!isTyping && (
-                <div className="suggested-replies">
-                  <div className="suggested-label">Vorschläge</div>
-                  {REPLY_POOL[(turnIndex - 1 + REPLY_POOL.length) % REPLY_POOL.length].map((r, i) => (
-                    <button key={i} className="suggested-chip" onClick={() => sendMessage(r.es)}>
-                      <div className="suggested-chip-es">{r.es}</div>
-                      <div className="suggested-chip-de">{r.de}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendMessage(input); }}>
-                {SPEECH_RECOGNITION && (
-                  <button type="button" className={"mic-btn" + (isListening ? " listening" : "")}
-                    onClick={() => (isListening ? stopListening() : startListening())}
-                    disabled={isTyping} aria-label={isListening ? "Aufnahme stoppen" : "Auf Spanisch sprechen"}
-                    title={isListening ? "Aufnahme stoppen" : "Auf Spanisch sprechen"}>
-                    {isListening ? "⏹️" : "🎙️"}
-                  </button>
-                )}
-                <input className="chat-input" value={input} onChange={e => setInput(e.target.value)}
-                  placeholder={isListening ? "Ich höre zu..." : "Sprich oder schreib auf Spanisch..."}
-                  disabled={isTyping} aria-label="Nachricht auf Spanisch" />
-                <button type="submit" className="send-btn" disabled={isTyping || !input.trim()} aria-label="Senden">➤</button>
-              </form>
-              {!SPEECH_RECOGNITION && (
-                <div className="mic-hint">🎙️ Spracherkennung wird von diesem Browser nicht unterstützt (am besten Chrome oder Edge nutzen).</div>
-              )}
-              {micError && <div className="mic-hint error">⚠️ {micError}</div>}
-              <button className="btn btn-outline" style={{ margin: "0 16px 16px", width: "calc(100% - 32px)" }} onClick={finishConversation}>
-                Gespräch beenden
-              </button>
-            </React.Fragment>
           )}
+
+          <form className="chat-input-row" onSubmit={e => { e.preventDefault(); sendMessage(input); }}>
+            {SPEECH_RECOGNITION && (
+              <button type="button" className={"mic-btn" + (isListening ? " listening" : "")}
+                onClick={() => (isListening ? stopListening() : startListening())}
+                disabled={isTyping} aria-label={isListening ? "Aufnahme stoppen" : "Auf Spanisch sprechen"}
+                title={isListening ? "Aufnahme stoppen" : "Auf Spanisch sprechen"}>
+                {isListening ? "⏹️" : "🎙️"}
+              </button>
+            )}
+            <input className="chat-input" value={input} onChange={e => setInput(e.target.value)}
+              placeholder={isListening ? "Ich höre zu..." : "Sprich oder schreib auf Spanisch..."}
+              disabled={isTyping} aria-label="Nachricht auf Spanisch" />
+            <button type="submit" className="send-btn" disabled={isTyping || !input.trim()} aria-label="Senden">➤</button>
+          </form>
+          {!SPEECH_RECOGNITION && (
+            <div className="mic-hint">🎙️ Spracherkennung wird von diesem Browser nicht unterstützt (am besten Chrome oder Edge nutzen).</div>
+          )}
+          {micError && <div className="mic-hint error">⚠️ {micError}</div>}
+          <button className="btn btn-outline" style={{ margin: "0 16px 16px", width: "calc(100% - 32px)" }} onClick={finishConversation}>
+            Gespräch beenden
+          </button>
         </React.Fragment>
       )}
 
@@ -890,13 +902,13 @@ function App() {
               </div>
             ) : (
               <div className="vocab-list">
-                {vocabEntries.map(([word, data]) => (
-                  <div key={word} className={"vocab-item" + (data.learned ? " learned" : "")}>
+                {vocabEntries.map(([key, data]) => (
+                  <div key={key} className={"vocab-item" + (data.learned ? " learned" : "")}>
                     <div className="vocab-item-text">
-                      <div className="vocab-item-word">{word}</div>
+                      <div className="vocab-item-word">{data.word}</div>
                       <div className="vocab-item-trans">{data.translation}</div>
                     </div>
-                    <button className="vocab-star" onClick={() => toggleLearned(word)} aria-label={data.learned ? "Als nicht gelernt markieren" : "Als gelernt markieren"}>
+                    <button className="vocab-star" onClick={() => toggleLearned(key)} aria-label={data.learned ? "Als nicht gelernt markieren" : "Als gelernt markieren"}>
                       {data.learned ? "⭐" : "☆"}
                     </button>
                   </div>
@@ -933,7 +945,7 @@ function App() {
             <div className="summary-block">
               <div className="summary-block-title">💡 Grammatik-Tipps</div>
               {sessionTips.length === 0 ? <div className="summary-empty">Keine Grammatik-Tipps in dieser Sitzung.</div> : (
-                sessionTips.map((t, i) => <div key={i} className="summary-tip-item">{t.title}: {t.before} → {t.after}</div>)
+                sessionTips.map((t, i) => <div key={i} className="summary-tip-item">{t.before} → {t.after}</div>)
               )}
             </div>
             <button className="btn btn-primary" onClick={goHome}>Fertig ✓</button>

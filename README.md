@@ -9,7 +9,12 @@ Spanisch lernen durch Gespräche mit KI-Charakteren – inspiriert von Apps wie 
 - 🔥 Streak, XP und Tagesziel motivieren zum täglichen Üben
 
 Einfach `index.html` im Browser öffnen – reines Frontend (React über CDN), kein Server nötig.
-Diese Version läuft mit simulierten Charakter-Antworten (kein Live-KI-API-Call).
+
+Die Charaktere werden von Claude (Anthropic API) gesteuert und antworten dynamisch auf das,
+was du schreibst oder sagst – inklusive Grammatik-Feedback zu deinen eigenen Sätzen. Dafür
+trägst du einmalig deinen eigenen Anthropic API-Key ein (Einstellungen in der App); der Key
+wird nur lokal im Browser gespeichert (`localStorage`) und der Aufruf geht direkt vom Browser
+an `api.anthropic.com` – ohne eigenes Backend.
 
 Für Mikrofon-Zugriff (Sprechen statt Tippen) muss die Seite als normale Webseite geöffnet werden
 (z.B. lokal per Doppelklick oder über GitHub Pages) – nicht eingebettet in einem iframe.
