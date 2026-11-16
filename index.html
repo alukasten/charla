@@ -570,7 +570,21 @@ function App() {
     window.speechSynthesis.speak(utt);
   }
 
+  // iOS/Safari only allows speechSynthesis.speak() when it's triggered directly
+  // by a user gesture (tap). Calling it once, synchronously, inside a tap handler
+  // "unlocks" it for later async calls (e.g. after an awaited API response) in
+  // the same page session.
+  function unlockSpeech() {
+    if (!("speechSynthesis" in window)) return;
+    try {
+      const u = new SpeechSynthesisUtterance(" ");
+      u.volume = 0;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+
   async function openCharacter(ch) {
+    unlockSpeech();
     if (!apiKey) { setScreen("apikey"); return; }
     setCharacter(ch);
     setMessages([]);
@@ -610,6 +624,7 @@ function App() {
 
   function startListening() {
     if (!SPEECH_RECOGNITION || isTyping) return;
+    unlockSpeech();
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setMicError("");
     const recog = new SPEECH_RECOGNITION();
@@ -633,6 +648,7 @@ function App() {
     recog.onend = () => {
       setIsListening(false);
       const text = finalTranscriptRef.current.trim();
+      finalTranscriptRef.current = "";
       if (text) sendMessage(text);
     };
     recognitionRef.current = recog;
@@ -668,6 +684,7 @@ function App() {
   async function sendMessage(text) {
     const trimmed = text.trim();
     if (!trimmed || isTyping) return;
+    unlockSpeech();
 
     setProfile(prev => ensureDaily({ ...prev }));
     setMessages(prev => [...prev, { id: nextId(), sender: "user", text: trimmed }]);
