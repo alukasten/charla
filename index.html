@@ -388,6 +388,21 @@ const CHARACTER_REPLY_TOOL = {
   },
 };
 
+function buildUserTurn(history, text) {
+  const last = history.length > 0 ? history[history.length - 1] : null;
+  const toolUseBlocks = (last && last.role === "assistant" && Array.isArray(last.content))
+    ? last.content.filter(b => b.type === "tool_use")
+    : [];
+  if (toolUseBlocks.length === 0) return { role: "user", content: text };
+  return {
+    role: "user",
+    content: [
+      ...toolUseBlocks.map(b => ({ type: "tool_result", tool_use_id: b.id, content: "ok" })),
+      { type: "text", text },
+    ],
+  };
+}
+
 function buildSystemPrompt(character, knownWords) {
   return `Du bist ${character.name}, eine Person aus ${character.country}. ${character.persona}
 
@@ -665,7 +680,7 @@ function App() {
 
     const knownWords = Object.keys(profile.vocab);
     const sys = buildSystemPrompt(character, knownWords);
-    const newHistory = [...apiHistory, { role: "user", content: trimmed }];
+    const newHistory = [...apiHistory, buildUserTurn(apiHistory, trimmed)];
 
     try {
       const { parsed, assistantContent } = await callClaude(apiKey, sys, newHistory);
