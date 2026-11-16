@@ -527,6 +527,7 @@ function App() {
   const chatWindowRef = useRef(null);
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef("");
+  const sendingRef = useRef(false);
 
   useEffect(() => {
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {}
@@ -683,7 +684,8 @@ function App() {
 
   async function sendMessage(text) {
     const trimmed = text.trim();
-    if (!trimmed || isTyping) return;
+    if (!trimmed || isTyping || sendingRef.current) return;
+    sendingRef.current = true;
     unlockSpeech();
 
     setProfile(prev => ensureDaily({ ...prev }));
@@ -726,6 +728,7 @@ function App() {
       setApiError(err.message);
     } finally {
       setIsTyping(false);
+      sendingRef.current = false;
     }
   }
 
