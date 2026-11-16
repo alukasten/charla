@@ -401,22 +401,30 @@ Regeln:
 async function callGemini(apiKey, systemPrompt, apiHistory) {
   let res;
   try {
-    res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          contents: apiHistory,
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          generationConfig: {
-            responseMimeType: "application/json",
-            responseSchema: REPLY_SCHEMA,
-          },
-        }),
-      }
-    );
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
+    try {
+      res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            contents: apiHistory,
+            systemInstruction: { parts: [{ text: systemPrompt }] },
+            generationConfig: {
+              responseMimeType: "application/json",
+              responseSchema: REPLY_SCHEMA,
+            },
+          }),
+        }
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
   } catch (e) {
+    if (e.name === "AbortError") throw new Error("Zeitüberschreitung – keine Antwort nach 20 Sekunden. Prüfe deine Internetverbindung und versuch's nochmal.");
     throw new Error("Netzwerkfehler. Bist du online?");
   }
 
