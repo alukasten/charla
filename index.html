@@ -305,6 +305,80 @@
     position: absolute; left: -9999px; top: auto;
     width: 1px; height: 1px; overflow: hidden;
   }
+
+  /* TOPIC PILLS (home) */
+  .topic-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .topic-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: #FFF1E0; border: 2px solid var(--border);
+    border-radius: 99px; padding: 6px 12px; font-size: 0.8rem; font-weight: 700; color: var(--text-light);
+  }
+  .topic-pill .lvl { background: var(--secondary); color: white; border-radius: 99px; padding: 1px 8px; font-size: 0.72rem; }
+
+  /* UNITS / LESSONS LIST */
+  .unit-block { margin-bottom: 22px; }
+  .unit-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .unit-icon { font-size: 1.6rem; }
+  .unit-title { font-size: 1.05rem; font-weight: 900; color: var(--text); flex: 1; }
+  .unit-progress { font-size: 0.78rem; font-weight: 700; color: var(--text-light); }
+  .lesson-grid { display: flex; flex-direction: column; gap: 10px; }
+  .lesson-node {
+    display: flex; align-items: center; gap: 12px;
+    background: white; border: 3px solid var(--border); border-radius: 18px;
+    padding: 14px 16px; cursor: pointer; text-align: left; font-family: var(--font);
+  }
+  .lesson-node.completed { border-color: var(--secondary); background: #F5FBF8; }
+  .lesson-node.locked { opacity: 0.5; cursor: not-allowed; }
+  .lesson-node-icon {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--primary); color: white;
+    display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 900; flex-shrink: 0;
+  }
+  .lesson-node.completed .lesson-node-icon { background: var(--secondary); }
+  .lesson-node.locked .lesson-node-icon { background: #C7B9AC; }
+  .lesson-node-title { font-size: 1rem; font-weight: 800; color: var(--text); }
+  .lesson-node-stars { font-size: 0.85rem; margin-top: 2px; }
+
+  /* LESSON PLAY SCREEN */
+  .lesson-progress-bar { padding: 14px 16px 0; }
+  .lesson-explain {
+    background: #EBF4FF; border-left: 5px solid var(--primary);
+    border-radius: 0 16px 16px 0; padding: 16px; margin: 16px; font-size: 0.95rem; font-weight: 600; line-height: 1.5;
+  }
+  .exercise-prompt { font-size: 1.25rem; font-weight: 900; margin: 20px 16px 6px; line-height: 1.4; }
+  .exercise-prompt-sub { font-size: 0.9rem; color: var(--text-light); font-weight: 600; margin: 0 16px 16px; }
+  .exercise-options { display: flex; flex-direction: column; gap: 10px; margin: 0 16px 16px; }
+  .exercise-option {
+    background: white; border: 3px solid var(--border); border-radius: 16px;
+    padding: 14px 16px; font-size: 1.05rem; font-weight: 800; text-align: left; cursor: pointer; font-family: var(--font);
+  }
+  .exercise-option:hover { border-color: var(--primary); }
+  .exercise-option.selected { border-color: var(--primary); background: #FFF1E0; }
+  .exercise-option.correct { border-color: var(--secondary); background: #E9F6F4; color: var(--secondary); }
+  .exercise-option.wrong { border-color: var(--warn); background: #FDEDE7; color: var(--warn); }
+  .exercise-option:disabled { cursor: default; }
+  .exercise-input {
+    margin: 0 16px 16px; width: calc(100% - 32px); border: 3px solid var(--border); border-radius: 16px;
+    padding: 14px 16px; font-family: var(--font); font-size: 1.05rem; font-weight: 700;
+  }
+  .exercise-input.correct { border-color: var(--secondary); }
+  .exercise-input.wrong { border-color: var(--warn); }
+  .exercise-feedback {
+    margin: 0 16px 16px; border-radius: 14px; padding: 12px 16px; font-size: 0.92rem; font-weight: 700;
+  }
+  .exercise-feedback.correct { background: #E9F6F4; color: var(--secondary); }
+  .exercise-feedback.wrong { background: #FDEDE7; color: var(--warn); }
+  .match-grid { display: flex; gap: 10px; margin: 0 16px 16px; }
+  .match-col { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .match-btn {
+    background: white; border: 3px solid var(--border); border-radius: 14px;
+    padding: 12px 10px; font-size: 0.92rem; font-weight: 800; cursor: pointer; font-family: var(--font); text-align: center;
+  }
+  .match-btn.selected { border-color: var(--primary); background: #FFF1E0; }
+  .match-btn.matched { border-color: var(--secondary); background: #E9F6F4; color: var(--secondary); cursor: default; }
+  .match-btn.wrong { border-color: var(--warn); background: #FDEDE7; }
+
+  /* LESSON SUMMARY */
+  .lesson-stars-big { font-size: 2.6rem; text-align: center; margin-bottom: 6px; }
 </style>
 </head>
 <body>
@@ -341,6 +415,136 @@ const CHARACTERS = [
     persona:"Du bist abenteuerlustig und naturverbunden, redest gern über Reisen, Wandern und die Natur Chiles. Du benutzt einfache bis mittlere Sätze.",
   },
 ];
+
+// ── Lesson curriculum (Duolingo-style fixed path, fully local, no API calls) ─
+const UNITS = [
+  {
+    id: "u1", title: "Begrüßung & Vorstellung", icon: "👋", topicId: "greetings",
+    lessons: [
+      {
+        id: "u1l1", title: "Hallo sagen",
+        explain_de: "In dieser Lektion lernst du die wichtigsten Begrüßungen und wie du dich vorstellst. Im Spanischen heißt „ich heiße\" = „me llamo\".",
+        exercises: [
+          { type: "mc", prompt_de: "Wie sagt man „Hallo\" auf Spanisch?", options: ["Hola", "Adiós", "Gracias"], correct: 0 },
+          { type: "mc", prompt_es: "¿Cómo ___ llamas?", prompt_de: "Wie heißt du?", options: ["te", "se", "me"], correct: 0 },
+          { type: "translate", prompt_de: "Ich heiße Lucas.", answer_es: "Me llamo Lucas.", accept: ["me llamo lucas"] },
+          { type: "match", pairs: [["hola", "Hallo"], ["adiós", "Tschüss"], ["gracias", "Danke"], ["por favor", "Bitte"]] },
+          { type: "mc", prompt_de: "Was bedeutet „Mucho gusto\"?", options: ["Sehr erfreut", "Guten Morgen", "Wie geht's"], correct: 0 },
+        ],
+      },
+      {
+        id: "u1l2", title: "Woher kommst du?",
+        explain_de: "Mit „soy de\" + Land sagst du, woher du kommst. „Yo soy de Alemania\" = Ich bin aus Deutschland.",
+        exercises: [
+          { type: "mc", prompt_es: "Yo ___ de Alemania.", prompt_de: "Ich bin aus Deutschland.", options: ["soy", "eres", "es"], correct: 0 },
+          { type: "translate", prompt_de: "Woher kommst du?", answer_es: "¿De dónde eres?", accept: ["de donde eres", "de dónde eres"] },
+          { type: "mc", prompt_de: "Was bedeutet „¿De dónde eres?\"", options: ["Woher kommst du?", "Wie alt bist du?", "Wo wohnst du?"], correct: 0 },
+          { type: "match", pairs: [["España", "Spanien"], ["Alemania", "Deutschland"], ["México", "Mexiko"], ["Argentina", "Argentinien"]] },
+          { type: "translate", prompt_de: "Ich komme aus Spanien.", answer_es: "Soy de España.", accept: ["soy de espana"] },
+        ],
+      },
+      {
+        id: "u1l3", title: "Wie geht's?",
+        explain_de: "„¿Cómo estás?\" fragt nach dem Befinden. Antworten: „Bien\" (gut), „Mal\" (schlecht), „Más o menos\" (geht so).",
+        exercises: [
+          { type: "mc", prompt_de: "Wie fragst du „Wie geht's?\"", options: ["¿Cómo estás?", "¿Cómo te llamas?", "¿De dónde eres?"], correct: 0 },
+          { type: "mc", prompt_es: "Estoy ___, gracias.", prompt_de: "Mir geht's gut, danke.", options: ["bien", "soy", "hola"], correct: 0 },
+          { type: "translate", prompt_de: "Mir geht es gut.", answer_es: "Estoy bien.", accept: ["estoy bien"] },
+          { type: "match", pairs: [["bien", "gut"], ["mal", "schlecht"], ["más o menos", "geht so"], ["genial", "super"]] },
+          { type: "mc", prompt_de: "Welches Verb benutzt man für das Befinden (vorübergehend)?", options: ["estar", "ser", "tener"], correct: 0 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "u2", title: "Ser vs. Estar & Adjektive", icon: "🎭", topicId: "ser_estar",
+    lessons: [
+      {
+        id: "u2l1", title: "Ser – wer ich bin",
+        explain_de: "„Ser\" benutzt man für dauerhafte Eigenschaften: Herkunft, Beruf, Charakter. Konjugation: soy, eres, es, somos, sois, son.",
+        exercises: [
+          { type: "mc", prompt_es: "Yo ___ profesor.", prompt_de: "Ich bin Lehrer.", options: ["soy", "estoy", "tengo"], correct: 0 },
+          { type: "mc", prompt_de: "Welches Verb für dauerhafte Eigenschaften?", options: ["ser", "estar", "hacer"], correct: 0 },
+          { type: "translate", prompt_de: "Sie ist Ärztin.", answer_es: "Ella es médica.", accept: ["ella es medica", "es médica", "es medica"] },
+          { type: "match", pairs: [["soy", "ich bin"], ["eres", "du bist"], ["es", "er/sie ist"], ["somos", "wir sind"]] },
+          { type: "mc", prompt_es: "Nosotros ___ de México.", prompt_de: "Wir sind aus Mexiko.", options: ["somos", "sois", "son"], correct: 0 },
+        ],
+      },
+      {
+        id: "u2l2", title: "Estar – wie ich mich fühle",
+        explain_de: "„Estar\" benutzt man für Zustände und Gefühle, die sich ändern können: estoy, estás, está, estamos, estáis, están.",
+        exercises: [
+          { type: "mc", prompt_es: "Yo ___ cansado.", prompt_de: "Ich bin müde.", options: ["estoy", "soy", "tengo"], correct: 0 },
+          { type: "mc", prompt_de: "Welches Verb für vorübergehende Zustände?", options: ["estar", "ser", "ir"], correct: 0 },
+          { type: "translate", prompt_de: "Wir sind glücklich.", answer_es: "Estamos felices.", accept: ["estamos felices"] },
+          { type: "match", pairs: [["estoy", "ich bin (Zustand)"], ["estás", "du bist (Zustand)"], ["está", "er/sie ist (Zustand)"], ["están", "sie sind (Zustand)"]] },
+          { type: "mc", prompt_es: "Ella ___ enferma hoy.", prompt_de: "Sie ist heute krank.", options: ["está", "es", "tiene"], correct: 0 },
+        ],
+      },
+      {
+        id: "u2l3", title: "Adjektive & Übung",
+        explain_de: "Adjektive passen sich in Spanisch an Geschlecht und Zahl an: bonito/bonita, alto/alta. Jetzt übst du ser und estar gemischt.",
+        exercises: [
+          { type: "mc", prompt_es: "La casa es muy ___.", prompt_de: "Das Haus ist sehr schön.", options: ["bonita", "bonito", "bonitos"], correct: 0 },
+          { type: "mc", prompt_de: "Was ist richtig: „Soy cansado\" oder „Estoy cansado\"?", options: ["Estoy cansado", "Soy cansado", "Beide gleich"], correct: 0 },
+          { type: "translate", prompt_de: "Er ist sehr nett.", answer_es: "Él es muy simpático.", accept: ["el es muy simpatico", "es muy simpático", "es muy simpatico"] },
+          { type: "match", pairs: [["alto", "groß"], ["bonito", "schön"], ["simpático", "nett"], ["cansado", "müde"]] },
+          { type: "mc", prompt_es: "¿Cómo ___ tú hoy?", prompt_de: "Wie geht es dir heute?", options: ["estás", "eres", "tienes"], correct: 0 },
+        ],
+      },
+    ],
+  },
+  {
+    id: "u3", title: "Essen & Zahlen", icon: "🍽️", topicId: "food_numbers",
+    lessons: [
+      {
+        id: "u3l1", title: "Im Café",
+        explain_de: "Im Café bestellst du mit „Quiero...\" (Ich möchte...) oder „Me gustaría...\" (Ich hätte gerne...).",
+        exercises: [
+          { type: "mc", prompt_de: "Wie sagst du „Ich möchte einen Kaffee\"?", options: ["Quiero un café", "Soy un café", "Tengo un café"], correct: 0 },
+          { type: "mc", prompt_es: "___ un té, por favor.", prompt_de: "Ich hätte gerne einen Tee, bitte.", options: ["Me gustaría", "Soy", "Estoy"], correct: 0 },
+          { type: "translate", prompt_de: "Die Rechnung, bitte.", answer_es: "La cuenta, por favor.", accept: ["la cuenta por favor"] },
+          { type: "match", pairs: [["café", "Kaffee"], ["agua", "Wasser"], ["pan", "Brot"], ["cuenta", "Rechnung"]] },
+          { type: "mc", prompt_de: "Was bedeutet „¿Qué desea?\"", options: ["Was möchten Sie?", "Wie heißen Sie?", "Wo wohnen Sie?"], correct: 0 },
+        ],
+      },
+      {
+        id: "u3l2", title: "Zahlen 1–20",
+        explain_de: "Zahlen: uno, dos, tres, cuatro, cinco, seis, siete, ocho, nueve, diez... bis veinte (20).",
+        exercises: [
+          { type: "mc", prompt_de: "Was ist „fünf\" auf Spanisch?", options: ["cinco", "cuatro", "seis"], correct: 0 },
+          { type: "mc", prompt_de: "Was ist „zehn\" auf Spanisch?", options: ["diez", "nueve", "once"], correct: 0 },
+          { type: "translate", prompt_de: "drei Kaffees", answer_es: "tres cafés", accept: ["tres cafes"] },
+          { type: "match", pairs: [["uno", "eins"], ["siete", "sieben"], ["quince", "fünfzehn"], ["veinte", "zwanzig"]] },
+          { type: "mc", prompt_de: "Was ist „zwölf\" auf Spanisch?", options: ["doce", "trece", "catorce"], correct: 0 },
+        ],
+      },
+      {
+        id: "u3l3", title: "Essen bestellen",
+        explain_de: "Jetzt kombinierst du Zahlen und Essen, um eine ganze Bestellung zu machen.",
+        exercises: [
+          { type: "mc", prompt_es: "Quiero ___ tacos, por favor.", prompt_de: "Ich möchte drei Tacos, bitte.", options: ["tres", "tercero", "treinta"], correct: 0 },
+          { type: "translate", prompt_de: "Ich möchte zwei Kaffees, bitte.", answer_es: "Quiero dos cafés, por favor.", accept: ["quiero dos cafes por favor"] },
+          { type: "mc", prompt_de: "Was bedeutet „la cuenta\"?", options: ["die Rechnung", "der Teller", "das Glas"], correct: 0 },
+          { type: "match", pairs: [["tacos", "Tacos"], ["ensalada", "Salat"], ["sopa", "Suppe"], ["postre", "Nachtisch"]] },
+          { type: "mc", prompt_de: "Wie fragst du höflich nach der Rechnung?", options: ["La cuenta, por favor", "Quiero la cuenta", "Tengo la cuenta"], correct: 0 },
+        ],
+      },
+    ],
+  },
+];
+
+const TOPIC_LABELS = { greetings: "Begrüßung", ser_estar: "Ser/Estar", food_numbers: "Essen & Zahlen" };
+
+function getTopicLevel(xp) {
+  if (xp >= 60) return "B1";
+  if (xp >= 25) return "A2";
+  return "A1";
+}
+
+function normalizeAnswer(s) {
+  return s.toLowerCase().trim().replace(/[.!?¡¿,]/g, "").replace(/\s+/g, " ");
+}
 
 // ── Starter suggestions (shown only before the learner's first message) ────
 const STARTER_SUGGESTIONS = [
@@ -480,11 +684,12 @@ const PROFILE_KEY = "boneBannerProfile";
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
 function loadProfile() {
+  const base = { streak: 0, lastActiveDate: null, xp: 0, dailyXP: 0, dailyDate: todayStr(), vocab: {}, lessons: {}, topicMastery: {} };
   try {
     const raw = localStorage.getItem(PROFILE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return { ...base, ...JSON.parse(raw) };
   } catch (e) {}
-  return { streak: 0, lastActiveDate: null, xp: 0, dailyXP: 0, dailyDate: todayStr(), vocab: {} };
+  return base;
 }
 
 function ensureDaily(profile) {
@@ -528,6 +733,15 @@ function App() {
   const recognitionRef = useRef(null);
   const finalTranscriptRef = useRef("");
   const sendingRef = useRef(false);
+  const [currentUnit, setCurrentUnit] = useState(null);
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [exIndex, setExIndex] = useState(0);
+  const [exCorrectCount, setExCorrectCount] = useState(0);
+  const [exAnswered, setExAnswered] = useState(false);
+  const [exSelected, setExSelected] = useState(null);
+  const [exWasCorrect, setExWasCorrect] = useState(false);
+  const [exTranslateInput, setExTranslateInput] = useState("");
+  const [matchState, setMatchState] = useState({ matched: [], selEs: null, selDe: null, wrong: [], shuffledDe: [] });
 
   useEffect(() => {
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {}
@@ -738,6 +952,126 @@ function App() {
     setScreen("summary");
   }
 
+  // ── Lessons (fully local, no API calls) ──────────────────────────────────
+  function flatLessons() {
+    const flat = [];
+    UNITS.forEach(unit => unit.lessons.forEach(lesson => flat.push({ unit, lesson })));
+    return flat;
+  }
+
+  function isLessonUnlocked(lessonId) {
+    const flat = flatLessons();
+    const idx = flat.findIndex(f => f.lesson.id === lessonId);
+    if (idx <= 0) return true;
+    const prev = flat[idx - 1].lesson.id;
+    return !!(profile.lessons[prev] && profile.lessons[prev].completed);
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function resetExerciseState(exercise) {
+    setExAnswered(false);
+    setExSelected(null);
+    setExWasCorrect(false);
+    setExTranslateInput("");
+    if (exercise && exercise.type === "match") {
+      setMatchState({ matched: [], selEs: null, selDe: null, wrong: [], shuffledDe: shuffle(exercise.pairs.map((p, i) => i)) });
+    } else {
+      setMatchState({ matched: [], selEs: null, selDe: null, wrong: [], shuffledDe: [] });
+    }
+  }
+
+  function startLesson(unit, lesson) {
+    setCurrentUnit(unit);
+    setCurrentLesson(lesson);
+    setExIndex(0);
+    setExCorrectCount(0);
+    resetExerciseState(lesson.exercises[0]);
+    setScreen("lesson");
+  }
+
+  function pickMcOption(idx) {
+    if (exAnswered) return;
+    const ex = currentLesson.exercises[exIndex];
+    const correct = idx === ex.correct;
+    setExSelected(idx);
+    setExWasCorrect(correct);
+    setExAnswered(true);
+    if (correct) setExCorrectCount(c => c + 1);
+  }
+
+  function checkTranslate() {
+    if (exAnswered) return;
+    const ex = currentLesson.exercises[exIndex];
+    const given = normalizeAnswer(exTranslateInput);
+    const accepted = [ex.answer_es, ...(ex.accept || [])].map(normalizeAnswer);
+    const correct = accepted.includes(given);
+    setExWasCorrect(correct);
+    setExAnswered(true);
+    if (correct) setExCorrectCount(c => c + 1);
+  }
+
+  function matchPick(side, idx) {
+    if (matchState.matched.includes(idx)) return;
+    const ex = currentLesson.exercises[exIndex];
+    const next = { ...matchState, wrong: [] };
+    if (side === "es") next.selEs = idx; else next.selDe = idx;
+    if (next.selEs !== null && next.selDe !== null) {
+      if (next.selEs === next.selDe) {
+        next.matched = [...next.matched, next.selEs];
+        next.selEs = null;
+        next.selDe = null;
+        if (next.matched.length === ex.pairs.length) {
+          setExWasCorrect(true);
+          setExAnswered(true);
+          setExCorrectCount(c => c + 1);
+        }
+      } else {
+        next.wrong = [next.selEs, next.selDe];
+        const wrongPick = { ...next };
+        setMatchState(wrongPick);
+        setTimeout(() => setMatchState(m => ({ ...m, selEs: null, selDe: null, wrong: [] })), 500);
+        return;
+      }
+    }
+    setMatchState(next);
+  }
+
+  function nextExercise() {
+    const nextIdx = exIndex + 1;
+    if (nextIdx >= currentLesson.exercises.length) {
+      finishLesson();
+      return;
+    }
+    setExIndex(nextIdx);
+    resetExerciseState(currentLesson.exercises[nextIdx]);
+  }
+
+  function finishLesson() {
+    const total = currentLesson.exercises.length;
+    const stars = exCorrectCount >= total ? 3 : exCorrectCount >= total * 0.7 ? 2 : 1;
+    const earnedXP = exCorrectCount * 5;
+    setProfile(prev => {
+      const topicId = currentUnit.topicId;
+      const prevTopic = prev.topicMastery[topicId] || { xp: 0 };
+      return {
+        ...ensureDaily({ ...prev }),
+        xp: prev.xp + earnedXP,
+        dailyXP: prev.dailyXP + earnedXP,
+        lessons: { ...prev.lessons, [currentLesson.id]: { completed: true, stars, lastScore: exCorrectCount } },
+        topicMastery: { ...prev.topicMastery, [topicId]: { xp: prevTopic.xp + earnedXP } },
+      };
+    });
+    setScreen("lessonSummary");
+  }
+
   const userMsgCount = messages.filter(m => m.sender === "user").length;
   const vocabEntries = Object.entries(profile.vocab).sort((a, b) => b[1].savedAt - a[1].savedAt);
   const goalPct = Math.min(100, Math.round((profile.dailyXP / DAILY_GOAL) * 100));
@@ -769,7 +1103,23 @@ function App() {
               <div className="daily-goal-bar"><div className="daily-goal-fill" style={{ width: goalPct + "%" }} /></div>
             </div>
 
-            <div className="section-label">Wähle deinen Gesprächspartner</div>
+            <div className="topic-pills">
+              {UNITS.map(u => {
+                const xp = (profile.topicMastery[u.topicId] || { xp: 0 }).xp;
+                return (
+                  <div key={u.id} className="topic-pill">
+                    <span>{u.icon} {TOPIC_LABELS[u.topicId]}</span>
+                    <span className="lvl">{getTopicLevel(xp)}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button className="btn btn-primary btn-block" onClick={() => setScreen("lessons")}>
+              📘 Lektionen
+            </button>
+
+            <div className="section-label" style={{ marginTop: 22 }}>Wähle deinen Gesprächspartner</div>
             <div className="character-grid" role="group" aria-label="Charakter auswählen">
               {CHARACTERS.map(ch => (
                 <button key={ch.id} className="character-card" onClick={() => openCharacter(ch)}>
@@ -792,6 +1142,162 @@ function App() {
             <button className="btn btn-outline btn-block" onClick={() => setScreen("apikey")}>
               ⚙️ API-Key verwalten
             </button>
+          </main>
+        </React.Fragment>
+      )}
+
+      {screen === "lessons" && (
+        <React.Fragment>
+          <div className="chat-header">
+            <button className="back-btn" onClick={goHome} aria-label="Zurück">←</button>
+            <span className="chat-header-name">📘 Lektionen</span>
+          </div>
+          <main className="main">
+            {UNITS.map(unit => {
+              const doneCount = unit.lessons.filter(l => profile.lessons[l.id] && profile.lessons[l.id].completed).length;
+              return (
+                <div key={unit.id} className="unit-block">
+                  <div className="unit-header">
+                    <span className="unit-icon">{unit.icon}</span>
+                    <span className="unit-title">{unit.title}</span>
+                    <span className="unit-progress">{doneCount}/{unit.lessons.length}</span>
+                  </div>
+                  <div className="lesson-grid">
+                    {unit.lessons.map((lesson, i) => {
+                      const done = profile.lessons[lesson.id] && profile.lessons[lesson.id].completed;
+                      const unlocked = isLessonUnlocked(lesson.id);
+                      return (
+                        <button key={lesson.id}
+                          className={"lesson-node" + (done ? " completed" : "") + (!unlocked ? " locked" : "")}
+                          onClick={() => unlocked && startLesson(unit, lesson)}
+                          disabled={!unlocked}>
+                          <span className="lesson-node-icon">{done ? "✓" : unlocked ? (i + 1) : "🔒"}</span>
+                          <span>
+                            <div className="lesson-node-title">{lesson.title}</div>
+                            {done && <div className="lesson-node-stars">{"⭐".repeat(profile.lessons[lesson.id].stars)}</div>}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </main>
+        </React.Fragment>
+      )}
+
+      {screen === "lesson" && currentLesson && (() => {
+        const ex = currentLesson.exercises[exIndex];
+        const total = currentLesson.exercises.length;
+        return (
+          <React.Fragment>
+            <div className="chat-header">
+              <button className="back-btn" onClick={goHome} aria-label="Abbrechen">←</button>
+              <span className="chat-header-name">{currentLesson.title}</span>
+            </div>
+            <div className="lesson-progress-bar">
+              <div className="daily-goal-bar"><div className="daily-goal-fill" style={{ width: Math.round((exIndex / total) * 100) + "%" }} /></div>
+            </div>
+
+            {exIndex === 0 && !exAnswered && ex === currentLesson.exercises[0] && (
+              <div className="lesson-explain">{currentLesson.explain_de}</div>
+            )}
+
+            {ex.type === "mc" && (
+              <React.Fragment>
+                {ex.prompt_es && <div className="exercise-prompt">{ex.prompt_es}</div>}
+                <div className={ex.prompt_es ? "exercise-prompt-sub" : "exercise-prompt"}>{ex.prompt_de}</div>
+                <div className="exercise-options">
+                  {ex.options.map((opt, i) => {
+                    let cls = "exercise-option";
+                    if (exAnswered) {
+                      if (i === ex.correct) cls += " correct";
+                      else if (i === exSelected) cls += " wrong";
+                    } else if (i === exSelected) cls += " selected";
+                    return (
+                      <button key={i} className={cls} onClick={() => pickMcOption(i)} disabled={exAnswered}>{opt}</button>
+                    );
+                  })}
+                </div>
+              </React.Fragment>
+            )}
+
+            {ex.type === "translate" && (
+              <React.Fragment>
+                <div className="exercise-prompt">Übersetze:</div>
+                <div className="exercise-prompt-sub">{ex.prompt_de}</div>
+                <input className={"exercise-input" + (exAnswered ? (exWasCorrect ? " correct" : " wrong") : "")}
+                  value={exTranslateInput} onChange={e => setExTranslateInput(e.target.value)}
+                  disabled={exAnswered} placeholder="Auf Spanisch..." aria-label="Übersetzung"
+                  onKeyDown={e => e.key === "Enter" && checkTranslate()} />
+                {!exAnswered && (
+                  <button className="btn btn-primary" style={{ margin: "0 16px 16px", width: "calc(100% - 32px)" }}
+                    onClick={checkTranslate} disabled={!exTranslateInput.trim()}>Prüfen</button>
+                )}
+              </React.Fragment>
+            )}
+
+            {ex.type === "match" && (
+              <React.Fragment>
+                <div className="exercise-prompt">Ordne die Paare zu</div>
+                <div className="match-grid">
+                  <div className="match-col">
+                    {ex.pairs.map((p, i) => {
+                      let cls = "match-btn";
+                      if (matchState.matched.includes(i)) cls += " matched";
+                      else if (matchState.selEs === i) cls += " selected";
+                      if (matchState.wrong.includes(i) && matchState.selEs === i) cls += " wrong";
+                      return <button key={i} className={cls} onClick={() => matchPick("es", i)} disabled={matchState.matched.includes(i)}>{p[0]}</button>;
+                    })}
+                  </div>
+                  <div className="match-col">
+                    {matchState.shuffledDe.map(i => {
+                      const p = ex.pairs[i];
+                      let cls = "match-btn";
+                      if (matchState.matched.includes(i)) cls += " matched";
+                      else if (matchState.selDe === i) cls += " selected";
+                      if (matchState.wrong.includes(i) && matchState.selDe === i) cls += " wrong";
+                      return <button key={i} className={cls} onClick={() => matchPick("de", i)} disabled={matchState.matched.includes(i)}>{p[1]}</button>;
+                    })}
+                  </div>
+                </div>
+              </React.Fragment>
+            )}
+
+            {exAnswered && ex.type !== "match" && (
+              <div className={"exercise-feedback" + (exWasCorrect ? " correct" : " wrong")}>
+                {exWasCorrect ? "✅ Richtig!" : `❌ Nicht ganz. Richtig wäre: ${ex.type === "translate" ? ex.answer_es : ex.options[ex.correct]}`}
+              </div>
+            )}
+
+            {exAnswered && (
+              <button className="btn btn-primary" style={{ margin: "0 16px 16px", width: "calc(100% - 32px)" }} onClick={nextExercise}>
+                {exIndex + 1 >= total ? "Lektion abschließen" : "Weiter"}
+              </button>
+            )}
+          </React.Fragment>
+        );
+      })()}
+
+      {screen === "lessonSummary" && (
+        <React.Fragment>
+          <div className="header">
+            <h1>Charla 🇪🇸</h1>
+          </div>
+          <main className="main">
+            <div className="summary-hero">
+              <div className="big-emoji">🎉</div>
+              <h2>Lektion geschafft!</h2>
+            </div>
+            <div className="lesson-stars-big">
+              {"⭐".repeat(exCorrectCount >= currentLesson.exercises.length ? 3 : exCorrectCount >= currentLesson.exercises.length * 0.7 ? 2 : 1)}
+            </div>
+            <div className="summary-stats">
+              <div className="summary-stat"><div className="val">{exCorrectCount}/{currentLesson.exercises.length}</div><div className="lbl">Richtig</div></div>
+              <div className="summary-stat"><div className="val">+{exCorrectCount * 5}</div><div className="lbl">XP verdient</div></div>
+            </div>
+            <button className="btn btn-primary" onClick={goHome}>Fertig ✓</button>
           </main>
         </React.Fragment>
       )}
