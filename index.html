@@ -379,6 +379,25 @@
 
   /* LESSON SUMMARY */
   .lesson-stars-big { font-size: 2.6rem; text-align: center; margin-bottom: 6px; }
+
+  /* VOCAB QUIZ */
+  .quiz-due-banner {
+    background: #E9F6F4; border: 2px solid var(--secondary); border-radius: 16px;
+    padding: 14px 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .quiz-due-banner span { font-weight: 800; color: var(--secondary); }
+  .quiz-progress { padding: 14px 16px 0; font-size: 0.8rem; font-weight: 700; color: var(--text-light); text-align: center; }
+  .quiz-card {
+    margin: 20px 16px; min-height: 180px; background: white; border: 3px solid var(--border); border-radius: 22px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; cursor: pointer;
+  }
+  .quiz-card-word { font-size: 1.6rem; font-weight: 900; color: var(--text); text-align: center; }
+  .quiz-card-trans { font-size: 1.15rem; font-weight: 700; color: var(--secondary); margin-top: 14px; text-align: center; }
+  .quiz-card-hint { font-size: 0.78rem; color: var(--text-light); font-weight: 600; margin-top: 12px; }
+  .quiz-answer-row { display: flex; gap: 10px; margin: 0 16px 16px; }
+  .quiz-answer-btn { flex: 1; padding: 18px; border-radius: 16px; border: none; font-family: var(--font); font-size: 1.05rem; font-weight: 900; cursor: pointer; }
+  .quiz-answer-btn.no { background: var(--warn); color: white; }
+  .quiz-answer-btn.yes { background: var(--secondary); color: white; }
 </style>
 </head>
 <body>
@@ -742,6 +761,10 @@ function App() {
   const [exWasCorrect, setExWasCorrect] = useState(false);
   const [exTranslateInput, setExTranslateInput] = useState("");
   const [matchState, setMatchState] = useState({ matched: [], selEs: null, selDe: null, wrong: [], shuffledDe: [] });
+  const [quizQueue, setQuizQueue] = useState([]);
+  const [quizIndex, setQuizIndex] = useState(0);
+  const [quizRevealed, setQuizRevealed] = useState(false);
+  const [quizCorrectCount, setQuizCorrectCount] = useState(0);
 
   useEffect(() => {
     try { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); } catch (e) {}
@@ -886,7 +909,7 @@ function App() {
   function saveVocab(word, translation) {
     const key = word.toLowerCase();
     if (profile.vocab[key]) return;
-    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [key]: { word, translation, savedAt: Date.now(), learned: false } } }));
+    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [key]: { word, translation, savedAt: Date.now(), learned: false, interval: 0, ease: 2.5, dueDate: todayStr(), reps: 0 } } }));
     setVocabSuggestions(prev => prev.filter(v => v.word !== word));
     setSessionNewVocab(prev => [...prev, { word, translation }]);
     addXP(5);
@@ -894,6 +917,52 @@ function App() {
 
   function toggleLearned(key) {
     setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [key]: { ...prev.vocab[key], learned: !prev.vocab[key].learned } } }));
+  }
+
+  // ── Vocab spaced-repetition quiz (SM-2-light, fully local) ───────────────
+  function vocabWithDefaults(data) {
+    return { interval: 0, ease: 2.5, dueDate: todayStr(), reps: 0, ...data };
+  }
+
+  function getDueVocab() {
+    const today = todayStr();
+    return Object.entries(profile.vocab)
+      .map(([key, data]) => [key, vocabWithDefaults(data)])
+      .filter(([, data]) => data.dueDate <= today);
+  }
+
+  function startVocabQuiz() {
+    const due = shuffle(getDueVocab());
+    setQuizQueue(due);
+    setQuizIndex(0);
+    setQuizRevealed(false);
+    setQuizCorrectCount(0);
+    setScreen("vocabQuiz");
+  }
+
+  function answerVocabCard(knewIt) {
+    const [key, data] = quizQueue[quizIndex];
+    const d = vocabWithDefaults(data);
+    let next;
+    if (knewIt) {
+      const reps = d.reps + 1;
+      const interval = reps === 1 ? 1 : reps === 2 ? 3 : Math.round(d.interval * d.ease);
+      next = { ...d, reps, interval, ease: Math.min(d.ease + 0.1, 3) };
+      setQuizCorrectCount(c => c + 1);
+      addXP(1);
+    } else {
+      next = { ...d, reps: 0, interval: 1, ease: Math.max(d.ease - 0.2, 1.3) };
+    }
+    const dueDate = new Date(Date.now() + next.interval * 86400000).toISOString().slice(0, 10);
+    next.dueDate = dueDate;
+    setProfile(prev => ({ ...prev, vocab: { ...prev.vocab, [key]: next } }));
+
+    if (quizIndex + 1 >= quizQueue.length) {
+      setScreen("vocabQuizSummary");
+    } else {
+      setQuizIndex(i => i + 1);
+      setQuizRevealed(false);
+    }
   }
 
   async function sendMessage(text) {
@@ -1074,6 +1143,7 @@ function App() {
 
   const userMsgCount = messages.filter(m => m.sender === "user").length;
   const vocabEntries = Object.entries(profile.vocab).sort((a, b) => b[1].savedAt - a[1].savedAt);
+  const dueVocabCount = getDueVocab().length;
   const goalPct = Math.min(100, Math.round((profile.dailyXP / DAILY_GOAL) * 100));
 
   return (
@@ -1452,20 +1522,77 @@ function App() {
                 <p>Chatte mit einem Charakter, um neue Wörter zu sammeln!</p>
               </div>
             ) : (
-              <div className="vocab-list">
-                {vocabEntries.map(([key, data]) => (
-                  <div key={key} className={"vocab-item" + (data.learned ? " learned" : "")}>
-                    <div className="vocab-item-text">
-                      <div className="vocab-item-word">{data.word}</div>
-                      <div className="vocab-item-trans">{data.translation}</div>
-                    </div>
-                    <button className="vocab-star" onClick={() => toggleLearned(key)} aria-label={data.learned ? "Als nicht gelernt markieren" : "Als gelernt markieren"}>
-                      {data.learned ? "⭐" : "☆"}
+              <React.Fragment>
+                {dueVocabCount > 0 && (
+                  <div className="quiz-due-banner">
+                    <span>🧠 {dueVocabCount} fällig</span>
+                    <button className="btn btn-secondary" style={{ width: "auto", padding: "10px 18px", minHeight: "auto" }} onClick={startVocabQuiz}>
+                      Jetzt wiederholen
                     </button>
                   </div>
-                ))}
+                )}
+                <div className="vocab-list">
+                  {vocabEntries.map(([key, data]) => (
+                    <div key={key} className={"vocab-item" + (data.learned ? " learned" : "")}>
+                      <div className="vocab-item-text">
+                        <div className="vocab-item-word">{data.word}</div>
+                        <div className="vocab-item-trans">{data.translation}</div>
+                      </div>
+                      <button className="vocab-star" onClick={() => toggleLearned(key)} aria-label={data.learned ? "Als nicht gelernt markieren" : "Als gelernt markieren"}>
+                        {data.learned ? "⭐" : "☆"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </React.Fragment>
+            )}
+          </main>
+        </React.Fragment>
+      )}
+
+      {screen === "vocabQuiz" && quizQueue.length > 0 && (() => {
+        const [, cardData] = quizQueue[quizIndex];
+        const card = vocabWithDefaults(cardData);
+        return (
+          <React.Fragment>
+            <div className="chat-header">
+              <button className="back-btn" onClick={goHome} aria-label="Abbrechen">←</button>
+              <span className="chat-header-name">🧠 Vokabel-Wiederholung</span>
+            </div>
+            <div className="quiz-progress">{quizIndex + 1} / {quizQueue.length}</div>
+            <div className="quiz-card" onClick={() => setQuizRevealed(true)} role="button" tabIndex={0}>
+              <div className="quiz-card-word">{card.word}</div>
+              {quizRevealed ? (
+                <div className="quiz-card-trans">{card.translation}</div>
+              ) : (
+                <div className="quiz-card-hint">👆 Zum Aufdecken antippen</div>
+              )}
+            </div>
+            {quizRevealed && (
+              <div className="quiz-answer-row">
+                <button className="quiz-answer-btn no" onClick={() => answerVocabCard(false)}>❌ Nicht gewusst</button>
+                <button className="quiz-answer-btn yes" onClick={() => answerVocabCard(true)}>✅ Gewusst</button>
               </div>
             )}
+          </React.Fragment>
+        );
+      })()}
+
+      {screen === "vocabQuizSummary" && (
+        <React.Fragment>
+          <div className="header">
+            <h1>Charla 🇪🇸</h1>
+          </div>
+          <main className="main">
+            <div className="summary-hero">
+              <div className="big-emoji">🧠</div>
+              <h2>Wiederholung geschafft!</h2>
+            </div>
+            <div className="summary-stats">
+              <div className="summary-stat"><div className="val">{quizCorrectCount}/{quizQueue.length}</div><div className="lbl">Gewusst</div></div>
+              <div className="summary-stat"><div className="val">+{quizCorrectCount}</div><div className="lbl">XP verdient</div></div>
+            </div>
+            <button className="btn btn-primary" onClick={() => setScreen("vocab")}>Fertig ✓</button>
           </main>
         </React.Fragment>
       )}
